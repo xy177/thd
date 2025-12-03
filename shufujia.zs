@@ -1,0 +1,2 @@
+mods.bloodmagic.AlchemyArray.addRecipe(<text:shufujia>, <bloodmagic:component:8>, <thaumcraft:sanity_soap>);
+ mods.bloodmagic.AlchemyArray.addRecipe(<additions:fxt-enderdragonfruit>, <minecraft:dragon_breath>,<harvestcraft:dragonfruititem>);

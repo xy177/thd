@@ -1,0 +1,15 @@
+
+mods.inworldcrafting.FluidToItem.transform(<minecraft:dirt>,<liquid:water>,[<minecraft:grass>]);
+mods.inworldcrafting.FluidToItem.transform(
+    <tconstruct:broadsword>.withTag({StatsOriginal: {AttackSpeedMultiplier: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 13750, HarvestLevel: 5, Attack: 11.5 as float}, display: {Name: "银河之剑"}, Stats: {AttackSpeedMultiplier: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 13750, HarvestLevel: 5, Attack: 11.5 as float}, Special: {Categories: ["tool", "weapon"]}, TinkerData: {Materials: ["fs2", "fs2", "fs2"], Modifiers: ["toolleveling"]}, Modifiers: [{identifier: "tconevo.artifact", color: -10747460, level: 1}, {identifier: "bloodeater", color: -10747460, level: 1}, {identifier: "bugkiller", color: -10747460, level: 1}, {identifier: "toolleveling", color: 16777215, level: 1}], Traits: ["tconevo.artifact", "bloodeater", "bugkiller", "toolleveling"]})
+    , <liquid:water>, [
+    <minecraft:iron_sword>], true);
+mods.inworldcrafting.FluidToItem.transform(
+   <totaltinkers:dagger>.withTag({StatsOriginal: {AttackSpeedMultiplier: 1.0 as float, Accuracy: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 8625, HarvestLevel: 5, Attack: 10.5 as float}, Stats: {AttackSpeedMultiplier: 1.0 as float, Accuracy: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 8625, HarvestLevel: 5, Attack: 10.5 as float}, Special: {Categories: ["tool", "weapon"]}, TinkerData: {Materials: ["fs2", "fs2", "fs2"], Modifiers: ["toolleveling"]}, Modifiers: [{identifier: "bloodeater", color: -10747460, level: 1}, {identifier: "tconevo.artifact", color: -10747460, level: 1}, {identifier: "qiaomiao", color: -10747460, level: 1}, {identifier: "toolleveling", color: 16777215, level: 1}], Traits: ["bloodeater", "tconevo.artifact", "qiaomiao", "toolleveling"]})
+   , <liquid:water>, [
+    <minecraft:iron_sword>], true);
+mods.inworldcrafting.FluidToItem.transform(
+   <tconstruct:hammer>.withTag({StatsOriginal: {AttackSpeedMultiplier: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 26250, HarvestLevel: 5, Attack: 10.5 as float}, display: {Name: "银河之锤"}, Stats: {AttackSpeedMultiplier: 1.0 as float, MiningSpeed: 7.0 as float, FreeModifiers: 3, Durability: 26250, HarvestLevel: 5, Attack: 10.5 as float}, Special: {Categories: ["harvest", "tool", "aoe", "weapon"]}, TinkerData: {Materials: ["fs2", "fs2", "fs2", "fs2"], Modifiers: ["toolleveling"]}, Modifiers: [{identifier: "bloodeater", color: -10747460, level: 1}, {identifier: "tconevo.artifact", color: -10747460, level: 1}, {identifier: "rifumei", color: -10747460, level: 1}, {identifier: "toolleveling", color: 16777215, level: 1}], Traits: ["bloodeater", "tconevo.artifact", "rifumei", "toolleveling"]})
+   , <liquid:water>, [
+    <minecraft:iron_sword>], true);
+    mods.inworldcrafting.FluidToItem.transform(<minecraft:potion>.withTag({Potion: "minecraft:water"}), <liquid:water>, [<minecraft:glass_bottle>], true);

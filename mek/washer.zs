@@ -1,0 +1,16 @@
+mods.mekanism.chemical.washer.removeRecipe(<gas:gold>, <gas:cleanGold>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:osmium>, <gas:cleanOsmium>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:copper>, <gas:cleanCopper>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:tin>, <gas:cleanTin>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:silver>, <gas:cleanSilver>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:lead>, <gas:cleanLead>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:uranium>, <gas:cleanUranium>);
+mods.mekanism.chemical.washer.removeRecipe(<gas:iron>, <gas:cleanIron>);
+mods.mekanism.chemical.washer.addRecipe(<gas:gold>*200, <gas:cleanGold>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:osmium>*200, <gas:cleanOsmium>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:copper>*200, <gas:cleanCopper>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:tin>*200, <gas:cleanTin>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:silver>*200, <gas:cleanSilver>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:lead>*200, <gas:cleanLead>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:uranium>*200, <gas:cleanUranium>*200);
+mods.mekanism.chemical.washer.addRecipe(<gas:iron>*200, <gas:cleanIron>*200);

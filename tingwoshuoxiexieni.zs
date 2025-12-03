@@ -1,0 +1,13 @@
+<ore:gemVoid>.remove(<actuallyadditions:item_crystal:3>);
+<ore:crystalVoid>.remove(<actuallyadditions:item_crystal:3>);
+<ore:nuggetVoid>.remove(<actuallyadditions:item_crystal_shard:3>);
+<ore:blockVoid>.remove(<actuallyadditions:block_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_crystal>,<actuallyadditions:item_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_crystal>,<actuallyadditions:block_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_crystal>,<actuallyadditions:item_crystal_shard:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:voidmetal>,<actuallyadditions:item_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:voidmetal>,<actuallyadditions:block_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:voidmetal>,<actuallyadditions:item_crystal_shard:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_metal>,<actuallyadditions:item_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_metal>,<actuallyadditions:block_crystal:3>);
+mods.tconstruct.Melting.removeRecipe(<liquid:void_metal>,<actuallyadditions:item_crystal_shard:3>);

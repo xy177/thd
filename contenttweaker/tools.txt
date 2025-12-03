@@ -1,0 +1,3721 @@
+#reloadable
+#loader contenttweaker
+#modloaded tconstruct
+
+#priority 99
+
+import mods.contenttweaker.tconstruct.TraitBuilder;
+import mods.manatweaks.ManaHandler;
+
+import crafttweaker.damage.IDamageSource;
+import crafttweaker.player.IPlayer;
+import crafttweaker.block.IBlock;
+import crafttweaker.entity.IEntity;
+import crafttweaker.entity.IEntityLivingBase;
+import crafttweaker.world.IWorld;
+import mods.ctutils.utils.Math;
+import crafttweaker.player.IFoodStats;
+import crafttweaker.event.EntityLivingHurtEvent;
+import mods.BXLib;
+import mods.ctintegration.scalinghealth.DifficultyManager;
+import crafttweaker.block.IBlockDefinition;
+import crafttweaker.block.IBlockState;
+import crafttweaker.util.IRandom;
+import crafttweaker.event.IEventPositionable;
+import crafttweaker.event.IBlockEvent;
+import crafttweaker.event.BlockBreakEvent;
+import crafttweaker.world.IBlockPos;
+import crafttweaker.item.IItemStack;
+import crafttweaker.world.IFacing;
+import crafttweaker.entity.IEntityDrop;
+import crafttweaker.entity.IEntityDefinition;
+import mods.contenttweaker.Color;
+import zentraits.TraitManager;
+import mods.tconstruct.traits.KnockBack;
+import crafttweaker.data.IData;
+import mods.zenutils.DataUpdateOperation.OVERWRITE;
+import mods.zenutils.DataUpdateOperation.APPEND;
+import mods.zenutils.DataUpdateOperation.MERGE;
+import mods.zenutils.DataUpdateOperation.REMOVE;
+import mods.zenutils.DataUpdateOperation.BUMP;
+import crafttweaker.world.IBiome;
+import crafttweaker.entity.IEntityArrow;
+import crafttweaker.util.Position3f;
+
+import native.slimeknights.tconstruct.TConstruct;
+import native.slimeknights.tconstruct.common.TinkerNetwork;
+import native.slimeknights.tconstruct.library.TinkerRegistry;
+import native.slimeknights.tconstruct.library.events.TinkerToolEvent;
+import native.slimeknights.tconstruct.library.tinkering.Category;
+import native.slimeknights.tconstruct.library.tinkering.TinkersItem;
+import native.slimeknights.tconstruct.library.tools.ToolCore;
+import native.slimeknights.tconstruct.library.tools.ranged.IProjectile;
+import native.slimeknights.tconstruct.library.traits.ITrait;
+import native.slimeknights.tconstruct.tools.TinkerModifiers;
+import native.slimeknights.tconstruct.tools.common.network.ToolBreakAnimationPacket;
+import native.slimeknights.tconstruct.tools.modifiers.ModReinforced;
+import native.net.minecraft.entity.player.EntityPlayer;
+
+import scripts.libs.CotTicTraitLib.cotticTraitLib;
+import scripts.libs.CotTicinit;
+import scripts.libs.CotTicTraitLib.getCotTicTraitLib;
+/*
+    本代码文件中“以小欺大”，“万恶之源”的属性源自大轩整合包，根据CC:BY-NC-ND 协议使用
+ */
+/*
+    本代码文件中“千锻之刃”等属性根据CC:BY-NC-ND 协议参考唐轩宇于mc百科的教程“cot为匠魂添加稍微复杂一点的特性事例”进行编写
+    进化修复部分取自贪婪整合包：重生
+ */
+ //给雨飞的留言：1.6的新词条我用了一大坨的自定义药水效果（虽然大部分是空效果）这个药水的文件是geininxiayaole，你到时候去那边找就行
+//消除匠魂伤害削减(近似计算)
+function damageCalc(damage as float) as float{
+    var dmg = damage;
+    if(dmg >=300){
+        return 162.21f;
+    }
+    if(dmg >=290){
+        return 153.71f;
+    }
+    if(dmg >=280){
+        return 145.34f;
+    }
+    if(dmg >=270){
+        return 137.05f;
+    }
+    if(dmg >=260){
+        return 128.91f;
+    }
+    if(dmg >=250){
+        return 120.88f;
+    }
+    if(dmg >=240){
+        return 112.94f;
+    }
+    if(dmg >=230){
+        return 105.23f;
+    }
+    if(dmg >=220){
+        return 97.62f;
+    }
+    if(dmg >=210){
+        return 90.16f;
+    }
+    if(dmg >=200){
+        return 82.92f;
+    }
+    if(dmg >=190){
+        return 75.81f;
+    }
+    if(dmg >=180){
+        return 68.95f;
+    }
+    if(dmg >=170){
+        return 62.30f;
+    }
+    if(dmg >=160){
+        return 55.78f;
+    }
+    if(dmg >=150){
+        return 49.66f;
+    }
+    if(dmg >=140){
+        return 43.71f;
+    }
+    if(dmg >=130){
+        return 38.01f;
+    }
+    if(dmg >=120){
+        return 32.70f;
+    }
+    if(dmg >=110){
+        return 27.59f;
+    }
+    if(dmg >=100){
+        return 22.9f;
+    }
+    if(dmg >=90){
+        return 18.57f;
+    }
+    if(dmg >=80){
+        return 14.47f;
+    }
+    if(dmg >=70){
+        return 11.03f;
+    }
+    if(dmg >=60){
+        return 7.89f;
+    }
+    if(dmg >=50){
+        return 5.18f;
+    }
+    if(dmg >=40){
+        return 3.12f;
+    }
+    if(dmg >=30){
+        return 1.40f;
+    }
+    return 0.0f;
+}
+
+
+function getTrueYaw(entity as IEntity) as double {
+    return (360.0d - entity.rotationYaw % 360.0d) % 360.0d;
+}
+
+function distance2D(x1 as double, z1 as double, x2 as double = 0.0d, z2 as double = 0.0d) as double {
+    return Math.sqrt(pow(x1 - x2, 2.0d) + pow(z1 - z2, 2.0d));
+}
+
+function polarize(x1 as double, z1 as double, x2 as double = 0.0d, z2 as double = 0.0d) as double[] {
+    var r as double = distance2D(x1, z1, x2, z2);
+    var dx as double = x1 - x2;
+    var dz as double = z1 - z2;
+    var theta as double = 0.0d;
+    if (dz > 0 && dx > 0) {
+        theta = Math.atan(dx / dz) * (180.0d / 3.1415926d);
+    } else if (dz < 0 && dx >= 0) {
+        theta = Math.atan(dx / dz) * (180.0d / 3.1415926d) + 180.0d;
+    } else if (dz < 0 && dx < 0) {
+        theta = Math.atan(dx / dz) * (180.0d / 3.1415926d) + 180.0d;
+    } else if (dz > 0 && dx < 0) {
+        theta = Math.atan(dx / dz) * (180.0d / 3.1415926d) + 360.0d;
+    } else if (dx == 0) {
+        if (dz >= 0) {
+            theta = 0.0d;
+        } else if (dz < 0) {
+            theta = 180.0d;
+        }
+    } else if (dz == 0) {
+        if (dx > 0) {
+            theta = 90.0d;
+        } else if (dz < 0) {
+            theta = 270.0d;
+        }
+    }
+    return [r, theta];
+}
+
+function getEntityLivingBaseInSector(entity as IEntity, range as double, angle as double) as IEntityLivingBase[] {
+    var r as double = range as double;
+    var Xt = entity.getX() as double;
+    var Yt = entity.getY() as double;
+    var Zt = entity.getZ() as double;
+    var areaStart as Position3f = Position3f.create((Xt + r), Yt, (Zt + r));
+    var areaEnd as Position3f = Position3f.create((Xt - r + 1.0d), (Yt + 2.0d), (Zt - r + 1.0d));
+    var entityLivingBaseArr as IEntityLivingBase[] = [];
+    for ent in entity.world.getEntitiesInArea(areaStart, areaEnd) {
+        if (distance2D(ent.x, ent.z, Xt, Zt) <= r && ent instanceof IEntityLivingBase) {
+            var Yaw as double = entity.rotationYaw as double;
+            var Polar as double = polarize(ent.x, ent.z, Xt, Zt)[1] as double;
+            if ((Math.abs(getTrueYaw(entity) - Polar) <= (angle / 2.0d)) || (360.0d - Math.max(getTrueYaw(entity), Polar)) + Math.min(getTrueYaw(entity), Polar) <= angle) {
+                var entityLivingBase as IEntityLivingBase = ent;
+                entityLivingBaseArr += entityLivingBase;
+            }
+        }
+    }
+    return entityLivingBaseArr;
+}
+
+var EvolvedTiersMap as int[][string] = {
+    "wyvern_metal" : [1],
+    "draconic_metal" : [2],
+    "chaotic_metal" : [3],
+    "emcworld" : [3],
+    "huan_yu" : [3],
+    "sjy" : [3],
+    "tz" : [3],
+    "yuluo" : [3]
+};
+
+function ishield (player as IPlayer ) as bool{
+if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+    return true;
+    }else{
+       return false; 
+    }
+}
+
+val lowTrait = TraitBuilder.create("low_kill_big");
+lowTrait.color = 0xffaadd;
+lowTrait.localizedName = "以小欺大";
+lowTrait.localizedDescription = "不畏强敌！§r\n§f攻击生命值比你高的敌人时伤害会更高";
+lowTrait.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    val mult as float = 1.0f + ((target.health as float/ attacker.health as float)/100.0f) as float;
+    if(mult >= 2.0f){
+        return (2.0f* newDamage) as float;
+    }
+    else{
+        return (mult as float * newDamage) as float;
+    }
+};
+lowTrait.register();
+
+val warpattackTrait = TraitBuilder.create("warp_attack");
+warpattackTrait.color = 0xffaadd;
+warpattackTrait.localizedName = "万恶之源";
+warpattackTrait.localizedDescription = "扭曲似乎能让你更强壮？§r\n§f你的扭曲越高，伤害越高，反之亦然";
+warpattackTrait.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if (warp >=400 ){
+        return (2.0f * newDamage) as float;
+    }
+    else{
+        return (2.0f * (warp as float / 400.0f) * newDamage) as float;
+    }
+};
+warpattackTrait.register();
+
+val zhuangyan = TraitBuilder.create("zhuangyan");
+zhuangyan.color = 0xffaadd;
+zhuangyan.localizedName = "庄严";
+zhuangyan.localizedDescription = "神圣不可侵犯§r\n§f对亡灵生物造成更多的伤害";
+zhuangyan.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(target.isUndead){
+        return 2.5f * newDamage as float;
+    }
+    else return newDamage;
+};
+zhuangyan.register();
+
+val gaoshang = TraitBuilder.create("gaoshang");
+gaoshang.color = 0xffaadd;
+gaoshang.localizedName = "高尚";
+gaoshang.localizedDescription = "富丽堂皇§r\n§f攻击后恢复饥饿值";
+gaoshang.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    player.foodStats.addStats(5,5.0);
+};
+gaoshang.register();
+
+val dihuang = TraitBuilder.create("dihuang");
+dihuang.color = 0xffaadd;
+dihuang.localizedName = "帝皇";
+dihuang.localizedDescription = "杂交效果§r\n§f同时具有庄严和高尚的效果\n 若使用过诗之蜜酒提升生命上限则增加攻击伤害，此后再次饮用诗之蜜酒时效果持续时间内伤害进一步增加";
+dihuang.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+    player.foodStats.addStats(5,5.0);
+    if(target.isUndead){
+        return 2.5f * newDamage as float;
+    }
+    else if(player.hasGameStage("heart1")){
+    if(player.isPotionActive(<potion:beto:drinking>)){return 1.6f*newDamage;}
+    else{return 1.3f*newDamage;}
+    }
+    else return newDamage;
+};
+dihuang.register();
+
+val star = TraitBuilder.create("star_rain");
+star.color = 0xffaadd;
+star.localizedName = "星之雨";
+star.localizedDescription = "星落,雨下§r\n§f对boss造成1.5倍伤害";
+star.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(target.isBoss){
+        return 1.5f * newDamage as float;
+    }
+    return newDamage;
+};
+star.register();
+
+val bx = TraitBuilder.create("bx");
+bx.color = 0xffaadd;
+bx.localizedName = "大轩の力";
+bx.localizedDescription = "啊，轻点...§r\n§f暴击更猛了，但平时更弱了";
+bx.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+        return 1.75f * newDamage;
+    }
+    return 0.65f * newDamage;
+};
+bx.register();
+
+val attack = TraitBuilder.create("attack_modi");
+attack.color = 0xffaadd;
+attack.localizedName = "伤害修正";
+attack.localizedDescription = "平衡被削减的伤害§r\n§f字面意思";
+attack.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var additions as float= damageCalc(newDamage);
+    return additions as float + newDamage as float;
+};
+attack.register();
+
+val sonofthesun = TraitBuilder.create("sonofthesun");
+sonofthesun.color = 0xffaadd;
+sonofthesun.localizedName = "太阳之子";
+sonofthesun.localizedDescription = "你现在不用再找酋长要buff了§r\n§f攻击敌人后获得太阳的祝福";
+sonofthesun.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    player.addPotionEffect(<potion:mowziesmobs:suns_blessing>.makePotionEffect(120, 0, false, false));
+};
+sonofthesun.register();
+
+val icecrystal = TraitBuilder.create("icecrystal");
+icecrystal.color = 0xffaadd;
+icecrystal.localizedName = "冰晶寒风";
+icecrystal.localizedDescription = "冻住！不许走！§r\n§f攻击后对敌人施加霜冻效果";
+icecrystal.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    if(!target.isBoss){
+    target.addPotionEffect(<potion:mowziesmobs:frozen>.makePotionEffect(25, 1, false, false));
+}};
+icecrystal.register();
+
+val gaika = TraitBuilder.create("gaika");
+gaika.color = 0xa3cf62;
+gaika.localizedName = "盖卡符文";
+gaika.localizedDescription = "在攻击敌人后获得一段时间大地的力量§r\n§f攻击敌人后获得大地的祝福效果";
+gaika.addItem(<item:text:fxtgaika>);
+gaika.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    player.addPotionEffect(<potion:mowziesmobs:geomancy>.makePotionEffect(90, 1, false, false));
+};
+gaika.register();
+
+val tuoleina = TraitBuilder.create("tuoleina");
+tuoleina.color = 0x1a2933;
+tuoleina.localizedName = "拓雷纳符文";
+tuoleina.localizedDescription = "在攻击敌人后让敌人遭受梦魇的侵扰§r\n§f攻击后赋予使敌人获得凋零效果\n§f消耗魔力提升伤害";
+tuoleina.addItem(<item:text:fxt_tuoleina>);
+tuoleina.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:wither>.makePotionEffect(90, 1, false, false));
+};
+
+tuoleina.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+val player as IPlayer = attacker;
+var yn as bool = (ManaHandler.requestManaExact(player, 2000,  true));
+ if(yn == true){
+return 1.1f*newDamage;
+ }else{
+     return newDamage;
+ }
+
+};
+tuoleina.register();
+
+val chicken = TraitBuilder.create("chicken");
+chicken.color = 0xffaadd;
+chicken.localizedName = "美味烤鸡";
+chicken.localizedDescription = "美味到掉渣！§r\n§f攻击时有几率得到烤鸡";
+chicken.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(Math.random() < 0.1){
+         var player as IPlayer = attacker;
+         player.give(<item:croparia:cooked_chicken_leg>);
+    }return newDamage;
+};
+chicken.register();
+
+val chickensound = TraitBuilder.create("chickensound");
+chickensound.color = 0xffaadd;
+chickensound.localizedName = "烤鸡之魂";
+chickensound.localizedDescription = "听起来就像活生生的一样！§r\n§f在你攻击时...会发出鸡叫";
+chickensound.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(Math.random() <=1){
+         var player as IPlayer = attacker;
+        player.executeCommand("playsound entity.chicken.death master @p 1 1 1 15 1.0 1.0");
+    }return newDamage;
+};
+chickensound.register();
+
+val seapower = TraitBuilder.create("seapower");
+seapower.color = 0xffaadd;
+seapower.localizedName = "海王之力";
+seapower.localizedDescription = "此海王非彼海王§r\n§f增加在水下对敌人造成的伤害";
+seapower.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.isInWater){
+       return(1.8f*newDamage) as float;
+       }
+       return newDamage as float;
+};
+seapower.register();
+
+var essay = TraitBuilder.create("essay");
+essay.color = 0x800000;
+essay.localizedName = "ddl之力";
+essay.localizedDescription = "你手中物品的速度显著提高了！§r\n§f手持此物品时获得急迫";
+essay.addItem(<item:text:essay>);
+essay.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+          if (!player.isPotionActive(<potion:minecraft:haste>)){
+            player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(40, 0, false, false));
+          }
+    }
+};
+essay.register();
+
+val charm = TraitBuilder.create("charm");
+charm.color = 0x800000;
+charm.localizedName = "魅惑";
+charm.localizedDescription = "使对方暂时失神§r\n§f攻击后使敌人获得较长时间的缓慢";
+charm.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(90, 1, false, false));
+};
+charm.register();
+
+val ddltd = TraitBuilder.create("ddltd");
+ddltd.color = 0xfeeeed;
+ddltd.localizedName = "返祖刀";
+ddltd.localizedDescription = "持有者可用此来触发来自远古的力量§r\n§f攻击后使敌人获得较长时间的虚弱";
+ddltd.addItem(<item:text:the_butterfly_razor>);
+ddltd.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(90, 1, false, false));
+};
+ddltd.register();
+
+val yinyang = TraitBuilder.create("yinyang");
+yinyang.color = 0xffaadd;
+yinyang.localizedName = "光耀暗影";
+yinyang.localizedDescription = "日出之时坚定如山，月光之下力强如火§r\n§f白天时会获得光合作用效果，夜晚时伤害更高";
+yinyang.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var world as IWorld = attacker.world;
+    if(!world.isDayTime()){
+        return 1.65f * newDamage as float;
+    }
+    return newDamage;
+};
+yinyang.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+          if(world.isDayTime()){
+            player.addPotionEffect(<potion:teastory:photosynthesis>.makePotionEffect(20, 1, false, false));
+          }
+    }
+};
+yinyang.register();
+
+var lightly = TraitBuilder.create("lightly");
+lightly.color = 0x800000;
+lightly.localizedName = "光合";
+lightly.localizedDescription = "让你能让植物一样光合作用§r\n§f持续给予玩家光合作用效果";
+lightly.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+          if (!player.isPotionActive(<potion:teastory:photosynthesis>)){
+            player.addPotionEffect(<potion:teastory:photosynthesis>.makePotionEffect(60, 0, false, false));
+          }
+    }
+};
+lightly.register();
+
+var darkness = TraitBuilder.create("darkness");
+darkness.color = 0x800000;
+darkness.localizedName = "影之刃";
+darkness.localizedDescription = "黑夜会赐予你更强的力量§r\n§f夜晚时伤害更高";
+
+darkness.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        if(attacker.world.getDimension() == -1){    
+        return (newDamage+13.0f);
+            }
+       return newDamage;
+};
+darkness.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var world as IWorld = attacker.world;
+    if(!world.isDayTime()){
+        return (newDamage+13.0f);
+    }
+    return newDamage;
+};
+
+darkness.onHit = function(trait, tool, attacker, target, damage, isCritical){
+       var nowworldtime as long = attacker.world.getWorldTime();
+    if (nowworldtime>=12000 as long ){
+    var player as IPlayer = attacker;
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(30, 1, false, false));
+          }
+};
+
+darkness.register();
+
+
+val soulbreak = TraitBuilder.create("soulbreak");
+soulbreak.color = 0x800000;
+soulbreak.localizedName = "神圣裁决";
+soulbreak.localizedDescription = " 在此宣判！§r\n§f攻击后一段时间内削减敌人少量生命上限";
+soulbreak.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:extrabotany:divinejustice>.makePotionEffect(300, 5, false, false));
+};
+soulbreak.register();
+
+val enhance = TraitBuilder.create("enhance");
+enhance.color = 0xffaadd;
+enhance.localizedName = "光彩照人";
+enhance.localizedDescription = "来自未来的它如此炫目！§r\n§f玫瑰金极佳地容纳了更多的升级槽！————本该如此，但是现在这个强化槽由魔法强化提供（不过这一属性暂时有别的惊喜）";
+enhance.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(!attacker.isInWater){
+       return(1.1f*newDamage) as float;
+       }
+       return newDamage as float;
+};
+enhance.register();
+
+val nj = TraitBuilder.create("nj");
+nj.color = 0xffaadd;
+nj.localizedName = "朴实无华";
+nj.localizedDescription = "纳米基岩，小子§r\n§f提升你普通攻击的伤害，略微削减你的暴击伤害";
+nj.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+        return 0.8f * newDamage;
+    }
+    return 1.75f * newDamage;
+};
+nj.register();
+
+val oldeight = TraitBuilder.create("oldeight");
+oldeight.color = 0xffaadd;
+oldeight.localizedName = "臭臭";
+oldeight.localizedDescription = "这味道...不太对劲§r\n§f使你的敌人获得反胃";
+oldeight.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:nausea>.makePotionEffect(25, 1, false, false));
+};
+oldeight.register();
+
+val intelligencee = TraitBuilder.create("intelligencee");
+intelligencee.color = 0xffaadd;
+intelligencee.localizedName = "聪慧";
+intelligencee.localizedDescription = "经验丰富§r\n§f随着时间推移，你会获得免费的经验等级";
+intelligencee.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected){
+    if(owner instanceof IPlayer){   //玩家是否持有此装备 
+        var player as IPlayer = owner;
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(tool.tag.lastTime)){//判断nbt是否为非空，tool.tag.lastTime是nbt（检测存在一个tool的子函数允许在update情况下使用的词条，这个词条的函数叫lasttime）
+      val lastTime = tool.tag.lastTime;//获取上次触发时间（这句话的第一个lasttime是变量）
+      if(WorldTime - lastTime>48000){//判断与上次触发时间的距离
+        player.executeCommand("xp 1L @p");
+        tool.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间（获取worldtime函数的数值并按照worldtime的格式储存于tool函数下可以在update大函数中应用的tag下面的lasttime中）
+      }
+    }else{
+        tool.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间（此update和前边的onUpdate大词条相关）
+    }  
+    }
+};
+intelligencee.register();
+
+val nekopunches = TraitBuilder.create("nekopunches");
+nekopunches.color = 0x800000;
+nekopunches.localizedName = "猫爪";
+nekopunches.localizedDescription = "贴贴w.§r\n§f你的攻击会降低敌人的攻击力和速度";
+nekopunches.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(90, 9, false, false));
+    target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(90, 1, false, false));
+};
+nekopunches.register();
+
+val cook = TraitBuilder.create("cook");
+cook.color = 0x800000;
+cook.localizedName = "八大主厨？";
+cook.localizedDescription = "不在其中，并行其列§r\n§f你的攻击力，血量和饱食度会在不同的状态下互相影响";
+cook.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+   val foodStats as IFoodStats = player.foodStats;//饱食度（鸡腿）（话说为什么是鸡腿？）（话说你在偷看这段代码吧）
+ if(player.health >=( player.maxHealth as float * 0.5f)){
+if(foodStats.foodLevel >=10){
+    player.foodStats.addStats(-2,0.0);
+    return(1.35f*newDamage) as float;
+}else{
+    player.foodStats.addStats(1,2.0);
+    player.health -=5;
+    return(1.0f*newDamage) as float;
+}
+ }else{
+   player.health +=2; 
+   return(0.75f*newDamage) as float;
+  
+}
+};
+cook.register();
+
+val onewater = TraitBuilder.create("onewater");
+onewater.color = 0x800000;
+onewater.localizedName = "一水的滋润";
+onewater.localizedDescription = "种地人，种地魂§r\n§f破坏方块会使你获得沃土";
+onewater.onBlockHarvestDrops = function(trait, tool, event) {
+    var player as IPlayer =  event.player;
+    player.give(<item:rustic:fertile_soil>);
+};
+onewater.register();
+
+val climax = TraitBuilder.create("climax");
+climax.color = 0xffaadd;
+climax.localizedName = "高高高潮！";
+climax.localizedDescription = "欢迎来到八点半马戏团！§r\n§f你的攻击会造成一定范围内的随机伤害";
+climax.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+ var rate = 0.5 * Math.random() + 0.9;
+return newDamage * rate as float;
+};
+climax.register();
+
+val impotence = TraitBuilder.create("impotence");
+impotence.color = 0xffaadd;
+impotence.localizedName = "狂妄自大";
+impotence.localizedDescription = "虚金现在真的虚了§r\n§f即使有噬魂者的存在，这件武器还是明显的高估了自己的实力";
+impotence.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+return(0.002f*newDamage) as float;
+};
+impotence.register();
+
+val bab = TraitBuilder.create("bab");
+bab.color = 0x800000;
+bab.localizedName = "星龙的蔑视";
+bab.localizedDescription = " 专杀弱者！§r\n§f对血量上限较低的生物造成更高的伤害";
+bab.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(target.maxHealth <=20){
+    return(1.2f*newDamage) as float;
+    }return newDamage;
+};
+bab.register();
+
+val eatfish = TraitBuilder.create("eatfish");
+eatfish.color = 0x800000;
+eatfish.localizedName = "痴愚";
+eatfish.localizedDescription = " 在无尽深渊中消亡§r\n§f扭曲达到一定程度后，你的伤害会随着你的总扭曲的提升而提升，同时也会有一个逐步提升的很小的概率会抹除敌人（不会产生击杀者和掉落）";
+eatfish.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if(!target.isBoss){
+    if(Math.random() <= min((warp/30000), 0.03)){
+    target.health -= target.maxHealth;
+    }}
+};
+
+eatfish.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if (warp >=1000 ){
+        return (1.7f * newDamage) as float;
+    }
+    else{
+        return (1.7f * (warp as float / 1000.0f) * newDamage) as float;
+    }
+};
+eatfish.register();
+
+val blinds = TraitBuilder.create("blinds");
+blinds.color = 0x800000;
+blinds.localizedName = "盲目";
+blinds.localizedDescription = " 诡异的光刺穿了你的灵魂§r\n§f攻击后一段时间内敌人会被施加各种负面效果";
+blinds.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:minecraft:wither>.makePotionEffect(30, 1, false, false));
+    target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(30, 2, false, false));
+    target.addPotionEffect(<potion:minecraft:poison>.makePotionEffect(30, 2, false, false));
+    target.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(30, 2, false, false));
+};
+blinds.register();
+
+val firstwonton = TraitBuilder.create("firstwonton");
+firstwonton.color = 0x800000;
+firstwonton.localizedName = "原初混沌";
+firstwonton.localizedDescription = " 宇宙的原初之力§r\n§f攻击后一段时间内你会被施加各种正面效果";
+firstwonton.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    attacker.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(15, 2, false, false));
+    attacker.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(15, 2, false, false));
+    attacker.addPotionEffect(<potion:minecraft:saturation>.makePotionEffect(15, 4, false, false));
+};
+firstwonton.register();
+
+val goodluck4u = TraitBuilder.create("goodluck4u");
+goodluck4u.color = 0xffaadd;
+goodluck4u.localizedName = "致初入此处者";
+goodluck4u.localizedDescription = " 愿你在新世界的旅途一切安好§r\n§f在主世界伤害降低，在非主世界的维度伤害提高";
+goodluck4u.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(!attacker.dimension == 0){
+       return(1.65f*newDamage) as float;
+    }
+    if(attacker.dimension == 0){
+        return(0.5f*newDamage) as float;
+    }
+    return newDamage as float;
+};
+goodluck4u.register();
+
+
+val lucky4 = TraitBuilder.create("lucky4");
+lucky4.color = 0xfb80e;
+lucky4.localizedName = "幸运";
+lucky4.localizedDescription = "祝你好运！§r\n§f破坏方块时会获得随机的矿物...在特定群系会有额外产出";
+lucky4.addItem(<item:text:lucky_clover>);
+// 前面的是模板，自己应该懂的
+
+lucky4.onBlockHarvestDrops = function(trait,tool,event) {
+    // 产生一个随机数（随机数值在0~1之间）
+    var Rand = Math.random();
+    if (Rand >= 0.95) {
+        // 此项概率为 0.05，所以常数为 1 - 0.05 = 0.95
+        val player as IPlayer =  event.player;
+        player.give(<item:text:paperboardendless>);
+        return ;
+        // return 用于结束函数运行（如果触发了这个if，那么后面的if不再运行）
+    }
+    if (Rand >= 0.8) {
+        // 此项概率为 0.15，所以常数为 0.95 - 0.15 = 0.8
+        val player as IPlayer =  event.player;
+        player.give(<item:thaumcraft:ore_quartz>);
+        return;
+    }
+    if (Rand >= 0.75) {
+        val player as IPlayer =  event.player;
+        player.give(<item:croparia:air_gem_ore>);
+        return;
+    }
+    if (Rand >= 0.7) {
+        val player as IPlayer =  event.player;
+        player.give(<item:croparia:earth_gem_ore>);
+        return;
+    }
+    if (Rand >= 0.5) {
+        val player as IPlayer =  event.player;
+        player.give(<item:astralsorcery:blockcustomore>);
+        return;
+    }
+    if (Rand >= 0.4) {
+        val player as IPlayer =  event.player;
+        player.give(<item:thermalfoundation:ore:4>);
+        return;
+    }
+    if (Rand >= 0.3) {
+        val player as IPlayer =  event.player;
+        var world = player.world;
+        var bop = world.getBiome(player.position);
+        if (bop.name.contains("Bamboo")||bop.name.contains("Maple")){
+        player.give(<item:sakura:sakura_diamond_ore>);
+        return;}else return;
+    }
+    if (Rand >= 0.25) {
+        val player as IPlayer =  event.player;
+        player.give(<item:croparia:water_gem_ore>);
+        return;
+    }
+    if (Rand >= 0.2) {
+        val player as IPlayer =  event.player;
+        player.give(<item:croparia:fire_gem_ore>);
+        return;
+    }
+    val player as IPlayer =  event.player;
+    player.give(<item:thermalfoundation:ore:6>);
+};
+lucky4.register();
+
+val thirstyteeth = TraitBuilder.create("thirstyteeth");
+thirstyteeth.color = 0xffaadd;
+thirstyteeth.localizedName = "缺水的洋流利齿";
+thirstyteeth.localizedDescription = "位置，远离海洋；洋流，急需补充；力量，无法发挥...§r\n§f如果你没有接触水源那么你的伤害会被削减";
+thirstyteeth.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var world as IWorld = attacker.world;
+    if(!attacker.isInWater & !world.isRaining()){
+        return 0.67f * newDamage as float;
+    }
+    return newDamage;
+};
+thirstyteeth.register();
+
+val huntinginstinct = TraitBuilder.create("huntinginstinct");
+huntinginstinct.color = 0x800000;
+huntinginstinct.localizedName = "猎食本能";
+huntinginstinct.localizedDescription = " 营养，不够充足；族群，需要滋养；捕食，急需进行...§r\n§f你的攻击会使你的生命上限提升一段时间";
+huntinginstinct.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+          if (!player.isPotionActive(<potion:minecraft:health_boost>)){
+            player.addPotionEffect(<potion:minecraft:health_boost>.makePotionEffect(100, 2, false, false));
+          }
+};
+huntinginstinct.register();
+
+val tu = TraitBuilder.create("tu");
+tu.color = 0x800000;
+tu.localizedName = "阳之凤";
+tu.localizedDescription = " 虽力强，若缺则损。§r\n§f你的幸运和伤害都会提高，但是会获得虚弱效果（距离扩展可防止虚弱的产生并使玩家攻击后获得力量效果）";
+tu.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+          if (player.isPotionActive(<potion:potioncore:reach>)){
+            player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(60, 1, false, false));
+          }
+};
+tu.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+        player.addPotionEffect(<potion:minecraft:luck>.makePotionEffect(60, 1, false, false));
+          if (!player.isPotionActive(<potion:potioncore:reach>)){
+            player.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(60, 2, false, false));
+          }
+    }
+};
+impotence.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+     return(1.15f*newDamage) as float;
+};
+tu.register();
+
+val la = TraitBuilder.create("la");
+la.color = 0x800000;
+la.localizedName = "阴之凰";
+la.localizedDescription = " 虽触远，若残则缓。§r\n§f你的触摸半径提升，但是会获得挖掘疲劳效果（幸运可防止挖掘疲劳的产生并使玩家攻击/破坏方块后获得急迫效果）";
+la.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+          if (player.isPotionActive(<potion:minecraft:luck>)){
+            player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(60, 1, false, false));
+          }
+};
+la.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+        player.addPotionEffect(<potion:potioncore:reach>.makePotionEffect(60, 1, false, false));
+          if (!player.isPotionActive(<potion:minecraft:luck>)){
+            player.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(40, 2, false, false));
+          }
+    }
+};
+
+la.onBlockHarvestDrops = function(trait, tool, event) {
+        var player as IPlayer =  event.player;
+  if (player.isPotionActive(<potion:minecraft:luck>)){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(30, 1, false, false));
+          }
+};
+
+la.register();
+
+val cmusic = TraitBuilder.create("cmusic");
+cmusic.color = 0xffaadd;
+cmusic.localizedName = "凤凰之音（或许）";
+cmusic.localizedDescription = "额，这就是凤鸣么§r\n§f在你攻击时所有人都会听到这个声音";
+cmusic.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(Math.random() <=1){
+         var player as IPlayer = attacker;
+        player.executeCommand("playsound entity.chicken.ambient master @a 1 1 1 15 1.0 1.0");
+    }return newDamage;
+};
+cmusic.register();
+
+val flameone = TraitBuilder.create("flameone");
+flameone.color = 0x800000;
+flameone.localizedName = "炽火";
+flameone.localizedDescription = "燃烧吧，小宝贝！§r\n§f点燃敌人一段时间，不会有额外的击退也不会附加龙炎伤害";
+flameone.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:potioncore:fire>.makePotionEffect(1, 0, false, false));
+};
+flameone.register();
+
+val forstone = TraitBuilder.create("forstone");
+forstone.color = 0x800000;
+forstone.localizedName = "凛冰";
+forstone.localizedDescription = "冻结吧，小甜心！§r\n§f冰镇敌人一段时间，不会有额外的击退也不会附加龙霜伤害";
+forstone.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:twilightforest:frosted>.makePotionEffect(7, 0, false, false));
+};
+forstone.register();
+
+var deepit = TraitBuilder.create("deepit");
+deepit.color = 0x800000;
+deepit.localizedName = "深穹";
+deepit.localizedDescription = "回归深空§r\n§f白天时伤害降低，夜晚时伤害恢复";
+
+deepit.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var world as IWorld = attacker.world;
+    if(world.isDayTime()){
+        return(0.66f*newDamage) as float;
+    }
+    return newDamage;
+};
+
+deepit.register();
+
+var babyspiky = TraitBuilder.create("babyspiky");
+babyspiky.color = 0x800000;
+babyspiky.localizedName = "棘刺";
+babyspiky.localizedDescription = "50%冰冷的刺！§r\n§f受攻击时会对攻击者造成伤害，此伤害不稳定且具有上限";
+
+babyspiky.onPlayerHurt = function(trait, tool, player, event, attacker) {
+   event.health -= min(tool.damage, 2);
+};
+
+babyspiky.register();
+
+var babyspiky2 = TraitBuilder.create("babyspiky2");
+babyspiky2.color = 0x800000;
+babyspiky2.localizedName = "棘刺";
+babyspiky2.localizedDescription = "75%冰冷的刺！§r\n§f受攻击时会对攻击者造成伤害，此伤害不稳定且具有上限";
+
+babyspiky2.onPlayerHurt = function(trait, tool, player, event, attacker) {
+   event.health -= min(tool.damage, 6);
+};
+
+babyspiky2.register();
+
+val bathing = TraitBuilder.create("bathing");
+bathing.color = 0x800000;
+bathing.localizedName = "醒悟";
+bathing.localizedDescription = " 此心湛然，尚觉可用§r\n§f当你攻击亡灵生物时，有概率降低你的临时扭曲或普通扭曲";
+bathing.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    var Rand = Math.random();
+    if (target.isUndead){
+     if (Rand >= 0.8) {
+    player.warpNormal -=2;
+    return ;
+    }
+     if (Rand >= 0.55) {
+    player.warpTemporary -=5;
+    return ;
+    }
+    player.warpNormal -=0;
+}
+};
+bathing.register();
+
+val disorderd = TraitBuilder.create("disorderd");
+disorderd.color = 0xfb80e;
+disorderd.localizedName = "轻微活化";
+disorderd.localizedDescription = "晶体遮影度30%§r\n§f破坏方块时会获得下级精华，初级精华，火精华，下界精华，自然精华，活化水晶碎片中的随机一项";
+
+disorderd.onBlockHarvestDrops = function(trait,tool,event) {
+    // 产生一个随机数（随机数值在0~1之间）
+    var Rand = Math.random();
+    if (Rand >= 0.9) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:crafting:5>);
+        return ;
+        // return 用于结束函数运行（如果触发了这个if，那么后面的if不再运行）
+    }
+    if (Rand >= 0.7) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:crafting:1>*2);
+        return;
+    }
+    if (Rand >= 0.6) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:fire_essence>*5);
+        return;
+    }
+    if (Rand >= 0.5) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:nether_essence>*5);
+        return;
+    }
+    if (Rand >= 0.4) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:nature_essence>*5);
+        return;
+    }
+    val player as IPlayer =  event.player;
+    player.give(<item:mysticalagriculture:crafting>*3);
+};
+disorderd.register();
+
+val exdisorderd = TraitBuilder.create("exdisorderd");
+exdisorderd.color = 0xfb80e;
+exdisorderd.localizedName = "中度活化";
+exdisorderd.localizedDescription = "晶体遮影度65%§r\n§f破坏方块时会获得中级精华，高级精华，末地精华，骑士金属精华，豆腐宝石，钻石豆腐，天地宝晶中的随机一项";
+
+exdisorderd.onBlockHarvestDrops = function(trait,tool,event) {
+    // 产生一个随机数（随机数值在0~1之间）
+    var Rand = Math.random();
+    if (Rand >= 0.9) {
+        val player as IPlayer =  event.player;
+        player.give(<item:tofucraft:material:18>);
+        return ;
+        // return 用于结束函数运行（如果触发了这个if，那么后面的if不再运行）
+    }
+    if (Rand >= 0.7) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:crafting:2>*5);
+        return;
+    }
+    if (Rand >= 0.5) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:crafting:3>*2);
+        return;
+    }
+    if (Rand >= 0.4) {
+        val player as IPlayer =  event.player;
+        player.give(<item:tofucraft:tofu_material:1>);
+        return;
+    }
+    if (Rand >= 0.25) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:end_essence>*5);
+        return;
+    }
+    if (Rand >= 0.2) {
+        val player as IPlayer =  event.player;
+        player.give(<item:biomesoplenty:terrestrial_artifact>);
+        return;
+    }
+    val player as IPlayer =  event.player;
+    player.give(<item:mysticalagriculture:knightmetal_essence>*3);
+};
+exdisorderd.register();
+
+val insdisorderd = TraitBuilder.create("insdisorderd");
+insdisorderd.color = 0xfb80e;
+insdisorderd.localizedName = "临界活化";
+insdisorderd.localizedDescription = "晶体遮影度98%§r\n§f破坏方块时会获得终极精华，究极精华，龙蛋精华，中子素精华中的随机一项";
+
+insdisorderd.onBlockHarvestDrops = function(trait,tool,event) {
+    // 产生一个随机数（随机数值在0~1之间）
+    var Rand = Math.random();
+    if (Rand >= 0.7) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagradditions:dragon_egg_essence>*5);
+        return ;
+        // return 用于结束函数运行（如果触发了这个if，那么后面的if不再运行）
+    }
+    if (Rand >= 0.4) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagriculture:crafting:4>*5);
+        return;
+    }
+    if (Rand >= 0.02) {
+        val player as IPlayer =  event.player;
+        player.give(<item:mysticalagradditions:insanium>*2);
+        return;
+    }
+    val player as IPlayer =  event.player;
+    player.give(<item:mysticalagradditions:neutronium_essence>);
+};
+insdisorderd.register();
+
+
+val firr = TraitBuilder.create("firr");
+firr.color = 0x800000;
+firr.localizedName = "秘火";
+firr.localizedDescription = "Iron Lotus §r\n§f攻击后点燃敌人";
+firr.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.setFire(600);
+};
+firr.register();
+
+val icansee = TraitBuilder.create("icansee");
+icansee.color = 0xffaadd;
+icansee.localizedName = "秘视";
+icansee.localizedDescription = "我看见了...§r\n§f每隔一段时间，你会看见你的扭曲情况";
+icansee.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected){
+    if(owner instanceof IPlayer){   //玩家是否持有此装备 
+        var player as IPlayer = owner;
+    val normal = player.warpNormal;
+    val temp = player.warpTemporary;
+    val perm = player.warpPermanent;
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(tool.tag.lastTime)){//判断nbt是否为非空，tool.tag.lastTime是nbt（检测存在一个tool的子函数允许在update情况下使用的词条，这个词条的函数叫lasttime）
+      val lastTime = tool.tag.lastTime;//获取上次触发时间（这句话的第一个lasttime是变量）
+      if(WorldTime - lastTime>300){//判断与上次触发时间的距离
+      
+        player.sendStatusMessage(format.red("普通："+normal+"|临时："+temp+"|永久："+perm));
+    
+        tool.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间（获取worldtime函数的数值并按照worldtime的格式储存于tool函数下可以在update大函数中应用的tag下面的lasttime中）
+      }
+    }else{
+        tool.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间（此update和前边的onUpdate大词条相关）
+    }  
+    }
+};
+icansee.register();
+
+val bootes = TraitBuilder.create("bootes");
+bootes.color = 0x800000;
+bootes.localizedName = "效应放大:【牧夫】";
+bootes.localizedDescription = "此空间站协议由【振变发信塔】进行转接§r\n§f攻击生物时对生物附加“画饼充饥”效果，使其掉落增加";
+bootes.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:astralsorcery:potiondropmodifier>.makePotionEffect(600, 2, false, false));
+};
+bootes.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    //\u5320\u9B42\u8FDB\u5316\u7B49\u7EA7\u4FEE\u6B63
+    if (!isNull(tool.tag.EvolvedTier)) {
+        var materialId as string = "";
+        if (CotTicLib.getTicMaterial(tool).length != 0) {
+            materialId = (CotTicLib.getTicMaterial(tool) as string[])[0] as string;
+        }
+        for metal in EvolvedTiersMap {
+            if (materialId == metal) {
+                var tier as int = EvolvedTiersMap[metal][0] as int;
+                if (tool.tag.EvolvedTier as int != tier) {
+                    if (tier >= 3) {
+                        tool.mutable().updateTag({EvolvedTier: 3, EvolvedTierExtra: tier as int});
+                    } else {
+                        tool.mutable().updateTag({EvolvedTier: tier as int, EvolvedTierExtra: tier as int});
+                    }
+                }
+                break;
+            }
+        }
+    }
+};
+bootes.register();
+
+val vivio = TraitBuilder.create("vivio");
+vivio.color = 0xffaadd;
+vivio.localizedName = "星辰共鸣:【虚御】";
+vivio.localizedDescription = "此空间站协议由【贪狼发信塔】进行转接§r\n§f使用之进行全力打击将获得更大的移速加成";
+vivio.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+         attacker.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(200, 2, false, false));
+    }
+    return newDamage;
+};
+vivio.register();
+
+val warpattackerTrait = TraitBuilder.create("warp_attacker");
+warpattackerTrait.color = 0xffaadd;
+warpattackerTrait.localizedName = "虚空之触";
+warpattackerTrait.localizedDescription = "惊人的奥秘印证着低语......§r\n§f当你拥有一定量的扭曲时，你造成的伤害提高";
+warpattackerTrait.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if (warp >=10 ){
+        return (newDamage+1.0f);
+    }
+    if (warp >=20 ){
+        return (newDamage+2.0f);
+    }
+    else{
+        return  newDamage;
+    }
+};
+warpattackerTrait.register();
+
+val tensai = TraitBuilder.create("tensai");
+tensai.color = 0xffaadd;
+tensai.localizedName = "封弊者";
+tensai.localizedDescription = "向噬魂者、沉睡之神、扭曲的使者、玩弄基因之人、绝对的人型天灾俯身致敬！§r\n§f你的武器伤害会随着你杀戮怪物而提升，击杀boss会更快的提升这一进程——提高的伤害具有上限";
+tensai.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var ks = tool.tag.killsoul;
+     var player as IPlayer = attacker;
+if(!isNull(tool.tag.killsoul)){
+if(target.health <= originalDamage){
+    if(target.isBoss){
+        ks = ks+1;
+tool.mutable().updateTag({killsoul : ks });
+player.sendStatusMessage(format.red("吞噬了这个强大生物的灵魂后，武器的附加伤害增长至"+ks));
+}else{
+   ks = ks+0.01;
+   tool.mutable().updateTag({killsoul : ks }); 
+player.sendStatusMessage(format.red("吞噬了这个生物的灵魂后，武器的附加伤害增长至"+ks));
+}return (newDamage + min(ks,50) as float);
+}return (newDamage + min(ks,50) as float);
+tool.mutable().updateTag({killsoul : ks});
+}else{
+ tool.mutable().updateTag({killsoul : 0});
+ return newDamage;   
+}
+};
+
+tensai.register();
+
+val teawind = TraitBuilder.create("teawind");
+teawind.color = 0xffaadd;
+teawind.localizedName = "茶之风";
+teawind.localizedDescription = "每日饮茶对你的身体有益§r\n§f当你用手持饮用的方式喝茶后的一个游戏日内，提高你所造成的伤害";
+teawind.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.isPotionActive(<potion:contenttweaker:teawind>)){
+       return (newDamage + 2.5f);
+    }
+    else return newDamage;
+};
+teawind.register();
+
+val nightpiapia = TraitBuilder.create("nightpiapia");
+nightpiapia.color = 0xffaadd;
+nightpiapia.localizedName = "夜魔の攻";
+nightpiapia.localizedDescription = "力量3的说~§r\n§f手持时获得力量3";
+nightpiapia.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){    
+        var player as IPlayer = owner;
+            player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(40, 2, false, false));//两秒，40刻，备忘用
+	}
+};
+nightpiapia.register();
+
+val dragon3d = TraitBuilder.create("dragon3d");
+dragon3d.color = 0xffaadd;
+dragon3d.localizedName = "强弩之末";
+dragon3d.localizedDescription = "强弩之末，势不能穿鲁缟者也。§r\n§f你与目标的距离超过一定限度后，距离越远，造成的伤害越低";
+dragon3d.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var a1 = attacker.getX(); 
+    var b1 = attacker.getY(); 
+    var c1 = attacker.getZ();
+    var a2 = target.getX(); 
+    var b2 = target.getY(); 
+    var c2 = target.getZ(); 
+    var a3 = (a1 - a2) ;
+    var b3 = (b1 - b2) ;
+    var c3 = (c1 - c2) ;
+    var d = (a3 * a3)+(b3 * b3)+(c3 * c3);
+    var e = 2406.2 - (0.85 * d);
+    var f = (e/1875)*newDamage as float;
+    if(d > 625){
+       return max(0.15*newDamage,f) as float;
+    }
+    else return newDamage;
+};
+dragon3d.register();
+
+val huax = TraitBuilder.create("huax");
+huax.color = 0xffaadd;
+huax.localizedName = "华胥";
+huax.localizedDescription = "锻翊者的陌路。§r\n§f攻击力，挖掘速度与耐久消耗均会被提高";
+huax.onBlockHarvestDrops = function(trait, tool, event) {
+    var player as IPlayer = event.player;
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, 0, false, false));
+};
+
+huax.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){  
+     return (newDamage+3.0f);
+};
+
+huax.onToolDamage = function(trait, tool, unmodifiedAmount, newAmount, holder) {
+    //CODE
+    return 2*newAmount as int; //Or your modified value
+};
+huax.register();
+
+
+val pinyin = TraitBuilder.create("pinyin");
+pinyin.color = 0xffaadd;
+pinyin.localizedName = "醲澧";
+pinyin.localizedDescription = "满堂花醉三千客……§r\n§获得力量与速度，玩家造成伤害减少";
+pinyin.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if(owner instanceof IPlayer){  
+        var player as IPlayer = owner;
+            player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(20, 1, false, false));//两秒，40刻，备忘用
+            player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(20, 1, false, false));//两秒，40刻，备忘用
+	}
+};
+
+pinyin.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        return 0.85f * newDamage as float;
+};
+
+pinyin.register();
+
+
+val chimera = TraitBuilder.create("chimera");
+chimera.color = 0xffaadd;
+chimera.localizedName = "缝合者";
+chimera.localizedDescription = "来点水晶，来点灵魂，来点狱火，再来点骑士精神，最后加入智慧……噫~↗↘§r\n§f当你不在主世界时造成伤害提高，在暮色森林时增加挖掘速度";
+
+chimera.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if (attacker.world.getDimension() == 0){
+    return newDamage;
+    }
+    return (newDamage+4.0f);
+   
+};
+
+chimera.onBlockHarvestDrops = function(trait, tool, event){
+    var player as IPlayer = event.player;
+    if (player.dimension == -777){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, 0, false, false));
+    }
+};//暮色森林中挖掘速度提升
+
+chimera.register();
+
+
+val pikaacg = TraitBuilder.create("pikaacg");
+pikaacg.color = 0xffaadd;
+pikaacg.localizedName = "千锻之刃";
+pikaacg.localizedDescription = "你们必将承受与我同等的苦痛！§r\n§f提升你对敌人背部的伤害";
+pikaacg.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+if(!target.world.remote){
+var faceingA as IFacing = IFacing.getDirectionFromEntityLiving(attacker.position, attacker);
+var faceingT as IFacing = IFacing.getDirectionFromEntityLiving(target.position, target);
+if(faceingA == faceingT){
+return(1.15f*newDamage) as float;
+}}
+return newDamage;
+};
+pikaacg.register();
+
+
+val blheart = TraitBuilder.create("blheart");
+blheart.color = 0xffaadd;
+blheart.localizedName = "刃心";
+blheart.localizedDescription = "“此心此身，亦为剑”§r\n§f用于浇筑宽剑刃时的面板相比铁略微提升";
+blheart.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        return newDamage;
+};
+blheart.register();
+
+val breakice = TraitBuilder.create("breakice");
+breakice.color = 0xffaadd;
+breakice.localizedName = "破冰者";
+breakice.localizedDescription = "怀揣着带有辣味的糖果，粉碎前路上被战友冰结的阻碍§r\n§f对被冻结的敌方单位造成较高伤害；\n对被冰冻的地方单位造成更高伤害。";
+breakice.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(target.isPotionActive(<potion:mowziesmobs:frozen>)){
+       return(1.15f*newDamage) as float;
+    }
+    if(target.isPotionActive(<potion:twilightforest:frosted>)){
+       return(1.08f*newDamage) as float;
+    }
+    else return newDamage;
+};
+breakice.register();
+
+val soul_absorbTrait = TraitBuilder.create("soul_absorb");
+soul_absorbTrait.color = Color.fromHex("76ff03").getIntColor(); 
+soul_absorbTrait.localizedName = game.localize("greedycraft.tconstruct.tool_trait.soul_absorbTrait.name");
+soul_absorbTrait.localizedDescription = game.localize("greedycraft.tconstruct.tool_trait.soul_absorbTrait.desc");
+soul_absorbTrait.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+        val player as IPlayer = attacker;
+          if(!player.world.remote && Math.random() < 0.5 && player.xp >= 30){
+            player.xp -= 5;
+            return newDamage * 1.65f;
+          }
+    return newDamage;
+};
+soul_absorbTrait.register();
+
+val abysscallingTrait = TraitBuilder.create("abysscalling");
+abysscallingTrait.color = Color.fromHex("ffffff").getIntColor(); 
+abysscallingTrait.localizedName = game.localize("greedycraft.tconstruct.tool_trait.abysscallingTrait.name");
+abysscallingTrait.localizedDescription = game.localize("greedycraft.tconstruct.tool_trait.abysscallingTrait.desc");
+abysscallingTrait.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+    val player as IPlayer = attacker;
+    if (player.getDimension() < 56 && player.getDimension() > 49) {
+        return newDamage * 1.5f;
+    }
+    return newDamage;
+};
+abysscallingTrait.register();
+
+val kuchan = TraitBuilder.create("kuchan");
+kuchan.color = 0xffaadd;
+kuchan.localizedName = "枯禅";
+kuchan.localizedDescription = "“只要收集足够多的舍利……”§r\n§f在夜晚时，每当你杀死一个生物，就可以获得一个短暂的增强，此增强会随着连杀而提升且刷新时间，上限三层。";
+
+kuchan.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    if (!target.alive && !target instanceof IPlayer){
+        if(attacker.isPotionActive(<potion:contenttweaker:blood>)){
+       player.removePotionEffect(<potion:contenttweaker:blood>);
+       player.addPotionEffect(<potion:contenttweaker:blooder>.makePotionEffect(160, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:blooder>)){
+       player.removePotionEffect(<potion:contenttweaker:blooder>);
+       player.addPotionEffect(<potion:contenttweaker:bloodest>.makePotionEffect(180, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:bloodest>)){
+       player.removePotionEffect(<potion:contenttweaker:bloodest>);
+       player.addPotionEffect(<potion:contenttweaker:bloodest>.makePotionEffect(180, 0, false, false));
+    }else {player.addPotionEffect(<potion:contenttweaker:blood>.makePotionEffect(140, 0, false, false));}
+    }};
+
+kuchan.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+    if(attacker.isPotionActive(<potion:contenttweaker:blood>)){
+return newDamage * 1.1f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:blooder>)){
+return newDamage * 1.2f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:bloodest>)){
+return newDamage * 1.3f;
+    }else {
+return newDamage ;
+    }
+};
+
+kuchan.register();
+
+val blueman = TraitBuilder.create("blueman");
+blueman.color = 0xffaadd;
+blueman.localizedName = "真蓝人";
+blueman.localizedDescription = "“真蓝人冲锋在前”§r\n§f随机触发以下中的一种：\n攻击或挖掘时概率获得速度和急迫\n攻击时概率赋予敌人虚弱自身获得力量\n攻击时概率赋予敌人缓慢\n同时只能触发一种情况";
+
+blueman.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    var blue = Math.random();
+     if(!attacker.isPotionActive(<potion:quark:blue>)){
+    if (blue>=0.7){
+        player.addPotionEffect(<potion:quark:blue>.makePotionEffect(40, 0, false, false));
+        player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(40, 1, false, false));
+        player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(40, 0, false, false));
+        return;
+    }else if(blue>=0.4){
+        player.addPotionEffect(<potion:quark:blue>.makePotionEffect(40, 0, false, false));
+        player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(40, 0, false, false));
+        target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(40, 1, false, false));
+        return;
+    }else if(blue>=0.1){
+        player.addPotionEffect(<potion:quark:blue>.makePotionEffect(10, 0, false, false));
+        target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(10, 2, false, false));
+        return;
+    }
+     }
+    };
+
+blueman.onBlockHarvestDrops = function(trait, tool, event){
+    var player as IPlayer = event.player;
+    var blue = Math.random();
+    if(!player.isPotionActive(<potion:quark:blue>)){
+    if (blue>=0.7){
+    player.addPotionEffect(<potion:quark:blue>.makePotionEffect(40, 0, false, false));
+        player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(40, 1, false, false));
+        player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(40, 0, false, false));
+        return;
+    }}
+};
+blueman.register();
+
+val greedycraft2 = TraitBuilder.create("greedycraft2");
+greedycraft2.color = 0x426ab3;
+greedycraft2.localizedName = "贪婪之噬";
+greedycraft2.localizedDescription = "正所谓，所有努力都将予以报答§r\n§f玩家的阶段越高，伤害越高！";
+greedycraft2.addItem(<item:text:twilight_gem>);
+greedycraft2.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+    var player as IPlayer = attacker;
+    if(player.hasGameStage("chaotic")){
+return newDamage * 1.6f;
+    }else if(player.hasGameStage("draconic")){
+return newDamage * 1.45f;
+    }else if(player.hasGameStage("cobalt")){
+return newDamage * 1.3f;
+    }else if(player.hasGameStage("first")){
+return newDamage * 1.15f;
+    }else{
+      return newDamage ;  
+    }
+};
+greedycraft2.register();
+
+val yellomoon = TraitBuilder.create("yellomoon");
+yellomoon.color = 0xffaadd;
+yellomoon.localizedName = "煌煌之月";
+yellomoon.localizedDescription = "来自暮光的仁慈，虽然不多§r\n§f暴击时较低概率赋予玩家抗火与燃烧";
+yellomoon.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    val player as IPlayer = attacker;
+    var moon = Math.random();
+    if(isCritical){
+        if (moon>=0.85){
+        player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(140, 0, false, false));
+        player.setFire(300);
+        return  newDamage;}
+        return  newDamage;
+    }
+    return  newDamage;
+};
+yellomoon.register();
+
+val coward = TraitBuilder.create("coward");
+coward.color = 0xffaadd;
+coward.localizedName = "命悬一线";
+coward.localizedDescription = "“让我们集中注意力，我可不想死在这儿。”§r\n§f若玩家处于惊慌失措状态，提升玩家的攻速和攻击力";
+
+coward.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+    if(attacker.isPotionActive(<potion:contenttweaker:scared>)){
+       player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(30, 1, false, false));
+       return (newDamage + 6.5f);
+    }
+    else return newDamage;
+};
+
+coward.register();
+
+val demonexchanged = TraitBuilder.create("demonexchanged");
+demonexchanged.color = 0x800000;
+demonexchanged.localizedName = "恶魔契约";
+demonexchanged.localizedDescription = "用血的代价来换取力量§r\n§f玩家攻击时会同时损失自己的血量";
+demonexchanged.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+    player.health -=4;
+    return 0.95f*newDamage;
+};
+demonexchanged.register();
+
+val iceboss = TraitBuilder.create("iceboss");
+iceboss.color = 0x800000;
+iceboss.localizedName = "凌剑";
+iceboss.localizedDescription = "“寒冷的冬林中，唯有一位女皇”§r\n§f玩家攻击低处的目标时伤害增加，若玩家处于冻结中则增强这一效果";
+iceboss.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+     var t = target.getY();
+    var p = player.getY();
+    if (t < p){
+        if (player.isPotionActive(<potion:twilightforest:frosty>)){
+        return newDamage * 1.5f;}
+        else {return newDamage * 1.2f;}
+    }else{return newDamage;}
+};
+
+iceboss.register();
+
+val iceeboss = TraitBuilder.create("iceeboss");
+iceeboss.color = 0xffaadd;
+iceeboss.localizedName = "霜雕";
+iceeboss.localizedDescription = "“住手……休再玷污本皇的国度……了”§r\n§f攻击使敌我双方获得冻结效果，若玩家拥有温暖则可免遭冻结";
+iceeboss.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var player as IPlayer = attacker;
+    target.addPotionEffect(<potion:twilightforest:frosted>.makePotionEffect(100, 1, false, false));
+    if (!player.isPotionActive(<potion:minecraft:warma>)){
+ attacker.addPotionEffect(<potion:twilightforest:frosted>.makePotionEffect(100, 1, false, false));}
+};
+iceeboss.register();
+
+val runner = TraitBuilder.create("runner");
+runner.color = 0xffaadd;
+runner.localizedName = "无畏冲锋";
+runner.localizedDescription = "你感觉你壮得像头牛！§r\n§f当玩家处于冲锋状态时，伤害中等幅度增加\n食用即食米诺口粮来获得冲锋效果";
+runner.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+if (player.isPotionActive(<potion:beto:running>))
+{
+        return newDamage * 1.2f;}
+        else {return newDamage;}
+};
+runner.register();
+
+val leido = TraitBuilder.create("leido");
+leido.color = 0xffaadd;
+leido.localizedName = "破火之刃";
+leido.localizedDescription = "给火中的目标以迎头痛击！§r\n§f玩家攻击处于着火状态下的敌人时伤害增加\n反之攻击未着火状态下的敌人伤害减小\n玩家处于炽血状态下时同样可触发伤害增加的效果";
+leido.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+if(target.isBurning)
+{return newDamage * 1.2f;}
+else if(player.isPotionActive(<potion:contenttweaker:redknife>))
+{return newDamage * 1.2f;}
+else
+{return newDamage * 0.8f;}
+};
+leido.register();
+
+val leidoo = TraitBuilder.create("leidoo");
+leidoo.color = 0xffaadd;
+leidoo.localizedName = "破火之刃Ⅱ";
+leidoo.localizedDescription = "给火中的目标以迎头痛击！§r\n§f玩家攻击处于着火状态下的敌人时伤害增加\n反之攻击未着火状态下的敌人伤害减小\n玩家处于炽血状态下时同样可触发伤害增加的效果\n伤害增减幅度大于[破火之刃]";
+leidoo.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+if(target.isBurning)
+{return newDamage * 1.4f;}
+else if(player.isPotionActive(<potion:contenttweaker:redknife>))
+{return newDamage * 1.4f;}
+else
+{return newDamage * 0.7f;}
+};
+leidoo.register();
+
+val yummy = TraitBuilder.create("yummy");
+yummy.color = 0xffaadd;
+yummy.localizedName = "绝味";
+yummy.localizedDescription = "入口为香，后泛辣意，油脂的香气和肉质滑嫩的感觉不断在你的舌尖回荡！§r\n§ 比起挨饿，你更愿意吃掉你的工具，但你的工具不会因此受到任何损坏";
+yummy.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected){
+    if(owner instanceof IPlayer){   
+        var player as IPlayer = owner;
+    var WorldTime = world.getWorldTime();
+    if(!isNull(tool.tag.lastTime)){
+        val lastTime = tool.tag.lastTime;
+      if(WorldTime - lastTime>1200){
+       player.foodStats.addStats(2,2.0);
+        tool.mutable().updateTag({lastTime : WorldTime});
+        }
+    }else{
+        tool.mutable().updateTag({lastTime : WorldTime});
+    }  
+    }
+};
+yummy.register();
+
+val olive = TraitBuilder.create("olive");
+olive.color = 0xffaadd;
+olive.localizedName = "神经替换";
+olive.localizedDescription = "你能感受到它们在你的皮下蠕动，这使你“勇猛无畏”§r\n§ 攻击敌人时概率获得共生效果，共生效果期间时格挡攻击会为你提供伤害吸收效果";
+olive.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    var jis = Math.random();
+     if(!attacker.isPotionActive(<potion:contenttweaker:oliveman>)){
+    if (jis>=0.5){
+        player.addPotionEffect(<potion:contenttweaker:oliveman>.makePotionEffect(180, 0, false, false));
+        return;
+    }
+     }
+    };
+
+olive.onBlock = function(trait, tool, player, event) {
+    if(player.isPotionActive(<potion:contenttweaker:oliveman>)){
+    player.addPotionEffect(<potion:minecraft:absorption>.makePotionEffect(60, 1, false, false));
+    }
+};
+
+olive.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+    if(player.isPotionActive(<potion:contenttweaker:oliveman>)){
+    player.addPotionEffect(<potion:minecraft:absorption>.makePotionEffect(60, 1, false, false));
+    }
+    }
+};
+olive.register();
+
+val happily = TraitBuilder.create("happily");
+happily.color = 0xffaadd;
+happily.localizedName = "炽热悲恸";
+happily.localizedDescription = "哀伤如暴雨般倾盆而下......§r\n§ 当玩家处于哀伤灵魂状态时提高玩家的伤害，若玩家处于悲恸状态下则显著强化这一效果";
+happily.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+if(player.isPotionActive(<potion:contenttweaker:happy>))
+{return newDamage * 1.15f;}
+else if(player.isPotionActive(<potion:contenttweaker:veryhappy>))
+{return newDamage * 1.45f;}
+else
+{return newDamage * 1.0f;}
+};
+happily.register();
+
+val hoomooarknight = TraitBuilder.create("hoomooarknight");
+hoomooarknight.color = 0xffaadd;
+hoomooarknight.localizedName = "气候共振";
+hoomooarknight.localizedDescription = "和环境调谐完全不是一个东西!§r\n§ 根据玩家所处群系的气候条件，为玩家提供不同种类的增益";
+hoomooarknight.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+var world = player.world;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.canRain){
+if (gl<0.2){
+    target.setFire(100);
+    return newDamage;
+}
+else if (gl<0.4){
+    target.addPotionEffect(<potion:tconstruct:dot>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+}else return newDamage;
+}else {
+  if (gl<0.2){
+    target.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+}else{return newDamage;}  
+}
+};
+
+hoomooarknight.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+var world = player.world;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.isSnowyBiome){
+target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(100, 1, false, false));
+return newDamage;
+}else {
+  return newDamage*1.2f;
+}
+};
+
+hoomooarknight.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+var world = player.world;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.highHumidity){
+player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(80, 0, false, false));
+player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(80, 0, false, false));
+return 0.9f*newDamage;
+}else {
+  return newDamage;
+}
+};
+hoomooarknight.register();
+
+val qiaomiao = TraitBuilder.create("qiaomiao");
+qiaomiao.color = 0xffaadd;
+qiaomiao.localizedName = "巧妙";
+qiaomiao.localizedDescription = "最起码你没花火山晶石§r\n§ 减少武器的攻击冷却";
+qiaomiao.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(15, 2, false, false));
+return newDamage;
+};
+qiaomiao.register();
+
+val bugkiller = TraitBuilder.create("bugkiller");
+bugkiller.color = 0xffaadd;
+bugkiller.localizedName = "虫子杀手";
+bugkiller.localizedDescription = "好在这里没有什么无敌的虫子§r\n§ 对节肢类生物造成更多伤害";
+bugkiller.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    tool.mutable().updateTag({ench: [{lvl: 3 as short, id: 18 as short}]});
+    };
+
+bugkiller.register();
+
+val bloodeater = TraitBuilder.create("bloodeater");
+bloodeater.color = 0xffaadd;
+bloodeater.localizedName = "吸血";
+bloodeater.localizedDescription = "还行，多少能奶一口§r\n§ 偶尔能从怪物身上吸取生命。";
+bloodeater.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(Math.random() < 0.1){
+         var player as IPlayer = attacker;
+         player.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(target.maxHealth*0.5, 0, false, false));
+         return newDamage;
+    }return newDamage;
+};
+bloodeater.register();
+
+val rifumei = TraitBuilder.create("rifumei");
+rifumei.color = 0xffaadd;
+rifumei.localizedName = "十字军";
+rifumei.localizedDescription = "好在这里没有什么会复活的木乃伊§r\n§ 对亡灵生物造成的伤害提高。";
+rifumei.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(target.isUndead){
+         return 1.5f*newDamage;
+    }return newDamage;
+};
+rifumei.register();
+
+val traittip = TraitBuilder.create("traittip");
+traittip.color = 0xffaadd;
+traittip.localizedName = "五彩之力";
+traittip.localizedDescription = "“不用去沙漠，也不用去冒险家工会”§r\n你可以通过对特定铁武器浇筑五彩碎片的熔融物来获得银河武器\n警告：银河系列的武器在升级后会导致武器词条消失，请自行把握使用时机";
+traittip.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        return newDamage;
+        //这是个空词条
+};
+traittip.register();
+
+val endoftwfo = TraitBuilder.create("endoftwfo");
+endoftwfo.color = 0xffaadd;
+endoftwfo.localizedName = "终兆回响";
+endoftwfo.localizedDescription = "看着这个汇聚了暮色之力的武器，你回想起了你在暮色的每一战§r\n§ 不知所措时击杀boss有两成几率恢复护命匣的储存次数\n哀伤灵魂状态下受击点燃敌人\n处于悲恸状态下攻击会让玩家付出某种代价来熄灭敌人身上的火焰并强化本次伤害\n若玩家处于炽血状态下则可以规避上一条的代价\n攻击处于冻结状态下的敌人会冰冻敌人，攻击处于冰冻状态下的敌人则会强化本次伤害";
+endoftwfo.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+if((originalDamage>target.health)&&(target.isBoss)&&(Math.random() < 0.2)){
+    player.addPotionEffect(<potion:contenttweaker:killboss>.makePotionEffect(20, 0, false, false));
+    return newDamage;
+}else{return newDamage;}
+};
+
+endoftwfo.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if (player.isPotionActive(<potion:contenttweaker:happy>)){
+        attacker.setFire(100);
+    }
+};
+
+endoftwfo.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+    if (player.isPotionActive(<potion:contenttweaker:veryhappy>)){
+    if (target.isBurning){
+    if (player.isPotionActive(<potion:contenttweaker:redknife>)){
+       target.setFire(0);
+        return 1.5f*newDamage; 
+    }else{
+        target.setFire(0);
+        player.addPotionEffect(<potion:minecraft:wither>.makePotionEffect(80, 2, false, false));}
+        return 1.5f*newDamage;
+    }else {return newDamage;}
+    }else {return newDamage;}
+}; 
+
+endoftwfo.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if (target.isPotionActive(<potion:twilightforest:frosted>)){
+    target.addPotionEffect(<potion:mowziesmobs:frozen>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+}else if(target.isPotionActive(<potion:twilightforest:frosted>)){
+    target.addPotionEffect(<potion:contenttweaker:dontice>.makePotionEffect(200, 0, false, false));
+    target.removePotionEffect(<potion:mowziesmobs:frozen>);
+    return 1.5f*newDamage;
+}else {return newDamage;}
+};
+
+endoftwfo.register();
+
+val neverblade = TraitBuilder.create("neverblade");
+neverblade.color = 0xffaadd;
+neverblade.localizedName = "幻形剑锋";
+neverblade.localizedDescription = "来自被放逐者的祈愿§r\n§f攻击时有一定概率显现虚空的意志";
+neverblade.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(Math.random() <=0.2){
+         var player as IPlayer = attacker;
+        player.addPotionEffect(<potion:contenttweaker:voidmind>.makePotionEffect(400, 0, false, false));
+        return newDamage;
+    }return newDamage;
+};
+neverblade.register();
+
+val voidmind = TraitBuilder.create("voidmind");
+voidmind.color = 0xffaadd;
+voidmind.localizedName = "幻形剑舞";
+voidmind.localizedDescription = "现在，请您降下罪罚§r\n§f玩家拥有虚空意志时伤害中等幅度提升，且攻击有极低概率使伤害大幅提升";
+voidmind.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.isPotionActive(<potion:contenttweaker:voidmind>)){
+        if (Math.random() <=0.01){
+        return 4.0f*newDamage;}
+        else return 1.2f*newDamage;
+    } else return newDamage;
+};
+voidmind.register();
+
+val newff = TraitBuilder.create("newff");
+newff.color = 0xffaadd;
+newff.localizedName = "FF";
+newff.localizedDescription = "“勇者屠龙那叫意料之中，寻常猎户屠了龙那才叫惊天伟业”§r\n§f攻击非boss生物时，造成伤害提高但在攻击后会施加低于提高值的瞬间治疗效果\n攻击boss类生物时，同时依据玩家与敌人双方的血量上限提供不同级别的伤害增幅且暴击会进一步增强这个效果";
+newff.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+val ph = player.maxHealth;
+val bh = target.maxHealth;
+if (!target.isBoss){
+    target.addPotionEffect(<potion:minecraft:instant_health>.makePotionEffect(1, 0, false, false));
+    return 5.0f+newDamage;
+}else{
+    if(isCritical){
+    if (ph >60){
+        if (bh<= 300){
+            return 1.25f*newDamage;
+        }else if (bh<= 650){
+            return 1.875f*newDamage;
+        }else {return 2.5f*newDamage;}
+    } else if(ph >40){
+        if (bh<= 300){
+            return 1.875f*newDamage;
+        }else if (bh<= 650){
+            return 2.5f*newDamage;
+        }else {return 3.125f*newDamage;}
+    }else {
+        if (bh<= 300){
+            return 2.5f*newDamage;
+        }else if (bh<= 650){
+            return 3.125f*newDamage;
+        }else {return 3.75f*newDamage;}
+    }}
+    else {
+    if (ph >60){
+        if (bh<= 300){
+            return newDamage;
+        }else if (bh<= 650){
+            return 1.5f*newDamage;
+        }else {return 2.0f*newDamage;}
+    } else if(ph >40){
+        if (bh<= 300){
+            return 1.5f*newDamage;
+        }else if (bh<= 650){
+            return 2.0f*newDamage;
+        }else {return 2.5f*newDamage;}
+    }else {
+        if (bh<= 300){
+            return 2.0f*newDamage;
+        }else if (bh<= 650){
+            return 2.5f*newDamage;
+        }else {return 3.0f*newDamage;}
+    }}
+}
+};
+
+newff.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    //\u5320\u9B42\u8FDB\u5316\u7B49\u7EA7\u4FEE\u6B63
+    if (!isNull(tool.tag.EvolvedTier)) {
+        var materialId as string = "";
+        if (CotTicLib.getTicMaterial(tool).length != 0) {
+            materialId = (CotTicLib.getTicMaterial(tool) as string[])[0] as string;
+        }
+        for metal in EvolvedTiersMap {
+            if (materialId == metal) {
+                var tier as int = EvolvedTiersMap[metal][0] as int;
+                if (tool.tag.EvolvedTier as int != tier) {
+                    if (tier >= 3) {
+                        tool.mutable().updateTag({EvolvedTier: 3, EvolvedTierExtra: tier as int});
+                    } else {
+                        tool.mutable().updateTag({EvolvedTier: tier as int, EvolvedTierExtra: tier as int});
+                    }
+                }
+                break;
+            }
+        }
+    }
+};
+
+newff.register();
+
+val newfff = TraitBuilder.create("newfff");
+newfff.color = 0xffaadd;
+newfff.localizedName = "FF";
+newfff.localizedDescription = "“多等待少冲动，这个大家伙会自己漏出破绽...”§r\n§f大幅提升对boss造成的伤害，命中后会进入短时间的缓息效果\n缓息状态下造成的伤害不再增加且命中会刷新缓息时长";
+newfff.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var player as IPlayer = attacker;
+if (!target.isBoss){
+    return newDamage;
+}else{
+    if(player.isPotionActive(<potion:contenttweaker:huanxi>)){
+        player.removePotionEffect(<potion:contenttweaker:huanxi>);
+        player.addPotionEffect(<potion:contenttweaker:huanxi>.makePotionEffect(40, 0, false, false));
+        return newDamage;
+    }else{
+      player.addPotionEffect(<potion:contenttweaker:huanxi>.makePotionEffect(40, 0, false, false));
+      return 2.0f*newDamage;  
+    }
+}
+};
+
+newfff.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    //\u5320\u9B42\u8FDB\u5316\u7B49\u7EA7\u4FEE\u6B63
+    if (!isNull(tool.tag.EvolvedTier)) {
+        var materialId as string = "";
+        if (CotTicLib.getTicMaterial(tool).length != 0) {
+            materialId = (CotTicLib.getTicMaterial(tool) as string[])[0] as string;
+        }
+        for metal in EvolvedTiersMap {
+            if (materialId == metal) {
+                var tier as int = EvolvedTiersMap[metal][0] as int;
+                if (tool.tag.EvolvedTier as int != tier) {
+                    if (tier >= 3) {
+                        tool.mutable().updateTag({EvolvedTier: 3, EvolvedTierExtra: tier as int});
+                    } else {
+                        tool.mutable().updateTag({EvolvedTier: tier as int, EvolvedTierExtra: tier as int});
+                    }
+                }
+                break;
+            }
+        }
+    }
+};
+newfff.register();
+
+val newtz = TraitBuilder.create("newtz");
+newtz.color = 0xffaadd;
+newtz.localizedName = "限弊者";
+newtz.localizedDescription = "向灵魂吞噬者、沉睡之神、扭曲的使者、玩弄基因之人、绝对的人型天灾俯身致敬！§r\n§f你的伤害会随着扭曲的高低程度而进行增减\n扭曲增伤最大化情况下你的攻击还会额外赋予敌人珊瑚和恐惧瘟疫效果\n玩家造成的单次伤害具有上限，此上限会随着玩家扭曲的升高而升高\n若玩家拥有理智守护和治愈效果则会极大降低这一上限";
+newtz.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if (warp >=720 ){
+        target.addPotionEffect(<potion:abyssalcraft:cplague>.makePotionEffect(200, 0, false, false));
+        target.addPotionEffect(<potion:abyssalcraft:dplague>.makePotionEffect(200, 0, false, false));
+        return (3.0f * newDamage) as float;
+    }
+    else{
+        return (3.0f * (warp as float / 720.0f) * newDamage) as float;
+    }
+};
+newtz.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var warp as int = 0;
+    var player as IPlayer = attacker;
+    warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+    if(player.isPotionActive(<potion:thaumcraft:warpward>)){
+        return min(45.0f,newDamage) as float;
+    }else if(player.isPotionActive(<potion:potioncore:cure>)){
+        return min(50.0f,newDamage) as float;
+    }else if(warp >=1200 ){
+        return min(240.0f,3.0f *newDamage) as float;
+    }else if (warp >=720 ){
+        target.addPotionEffect(<potion:abyssalcraft:cplague>.makePotionEffect(200, 0, false, false));
+        target.addPotionEffect(<potion:abyssalcraft:dplague>.makePotionEffect(200, 0, false, false));
+        return min(3.0f * (warp as float / 1200.0f)*newDamage,140.0f) as float;
+    }
+    else {
+        return min(3.0f * (warp as float / 1200.0f)*newDamage,140.0f) as float;
+    }
+};
+
+newtz.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    //\u5320\u9B42\u8FDB\u5316\u7B49\u7EA7\u4FEE\u6B63
+    if (!isNull(tool.tag.EvolvedTier)) {
+        var materialId as string = "";
+        if (CotTicLib.getTicMaterial(tool).length != 0) {
+            materialId = (CotTicLib.getTicMaterial(tool) as string[])[0] as string;
+        }
+        for metal in EvolvedTiersMap {
+            if (materialId == metal) {
+                var tier as int = EvolvedTiersMap[metal][0] as int;
+                if (tool.tag.EvolvedTier as int != tier) {
+                    if (tier >= 3) {
+                        tool.mutable().updateTag({EvolvedTier: 3, EvolvedTierExtra: tier as int});
+                    } else {
+                        tool.mutable().updateTag({EvolvedTier: tier as int, EvolvedTierExtra: tier as int});
+                    }
+                }
+                break;
+            }
+        }
+    }
+};
+newtz.register();
+
+val fireb = TraitBuilder.create("fireb");
+fireb.color = 0xffaadd;
+fireb.localizedName = "引火绒";
+fireb.localizedDescription = "引火上身§r\n§f玩家处于燃烧状态下攻击会熄灭自身火焰并获得短暂的抗性提升";
+fireb.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        if (attacker.isBurning){
+            var player as IPlayer = attacker;
+          player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(60, 0, false, false));  
+       player.setFire(0);
+       return newDamage;
+       }return newDamage;};
+fireb.register();
+
+val woter = TraitBuilder.create("woter");
+woter.color = 0xffaadd;
+woter.localizedName = "排雨渠";
+woter.localizedDescription = "汇雨成河§r\n§f玩家在下雨状态下攻击力提升";
+woter.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+    if(world.isRaining()){
+        return (newDamage+2.0f);
+    }return newDamage;};
+woter.register();
+
+val willindy = TraitBuilder.create("willindy");
+willindy.color = 0xffaadd;
+willindy.localizedName = "迎风翼";
+willindy.localizedDescription = "顺风而浮§r\n§f玩家所处位置越高，伤害越高";
+willindy.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+var t = attacker.getY();
+    if(t<64){
+        return newDamage;
+    }
+    else{
+        var a = min(5,((0.025*t) - 1.6)) as float;
+        return (newDamage + a);
+    }};
+willindy.register();
+
+val wondtap = TraitBuilder.create("wondtap");
+wondtap.color = 0xffaadd;
+wondtap.localizedName = "镇土岩";
+wondtap.localizedDescription = "夯土于行§r\n§f玩家所处位置越低，攻击速度越快";
+wondtap.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+var t = attacker.getY();
+    if(t>60){
+        return newDamage;
+    }
+    else{
+        var a = min(3,(3-(0.05*t))) as float;
+    var player as IPlayer = attacker;
+player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, a, false, false));
+return newDamage;
+    }};
+wondtap.register();
+
+val gemfino = TraitBuilder.create("gemfino");
+gemfino.color = 0xffaadd;
+gemfino.localizedName = "元素之咏";
+gemfino.localizedDescription = "皆行于此§r\n§f具有全部元素宝石的特性";
+gemfino.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+        if (target.isBurning){
+            var player as IPlayer = attacker;
+          target.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(60, 0, false, false));  
+       player.setFire(0);
+       return newDamage;
+       }return newDamage;};
+
+gemfino.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+    if(world.isRaining()){
+        return (newDamage+2.0f);
+    }return newDamage;};
+
+gemfino.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+var t = attacker.getY();
+    if(t<64){
+        return newDamage;
+    }
+    else{
+        var a = min(5,((0.025*t) - 1.6)) as float;
+        return (newDamage + a);
+    }};
+
+gemfino.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var world as IWorld = attacker.world;
+var t = attacker.getY();
+    if(t>60){
+        return newDamage;
+    }
+    else{
+        var a = min(3,(3-(0.05*t))) as float;
+    var player as IPlayer = attacker;
+player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, a, false, false));
+return newDamage;
+    }};
+gemfino.register();
+
+val poi = TraitBuilder.create("poi");
+poi.color = 0xffaadd;
+poi.localizedName = "蚀毒";
+poi.localizedDescription = "“通常”不致死，只要你不去舔它§r\n§f使命中的目标中毒\n§f仅可通过将海蟒釉质的射弹类顶端部件与毒针合成来获取对应部件";
+poi.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+  target.addPotionEffect(<potion:minecraft:poison>.makePotionEffect(160, 1, false, false));  
+  return newDamage;
+};
+poi.register();
+
+val obtuseangle = TraitBuilder.create("obtuseangle");
+obtuseangle.color = 0xffaadd;
+obtuseangle.localizedName = "黏着化";
+obtuseangle.localizedDescription = "更柔软，但也更耐磨§r\n§f略微降低攻击造成的伤害，但使工具更加耐用";
+obtuseangle.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+  return 0.8f * newDamage as float;
+};
+
+obtuseangle.onToolDamage = function(trait, tool, unmodifiedAmount, newAmount, holder) {
+if(Math.random() < 0.75){
+    return 0*newAmount as int; 
+    }return newAmount; 
+};
+obtuseangle.register();
+
+val newxy = TraitBuilder.create("newxy");
+newxy.color = 0xffaadd;
+newxy.localizedName = "天球之律";
+newxy.localizedDescription = "星落，雨下§r\n§f玩家每次攻击都会强化下一次攻击并消耗饥饿值，第五次攻击时伤害强化至最高；第五次攻击后如果玩家短时间内再次发起攻击则会导致此特性失效一段时间且持续消耗饥饿值（视为正面效果）";
+
+newxy.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+        if(attacker.isPotionActive(<potion:contenttweaker:nomusic>)){
+            player.foodStats.addStats(-1,-1.0);
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musica>)){
+       player.removePotionEffect(<potion:contenttweaker:musica>);
+       player.addPotionEffect(<potion:contenttweaker:musicb>.makePotionEffect(100, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicb>)){
+       player.removePotionEffect(<potion:contenttweaker:musicb>);
+       player.addPotionEffect(<potion:contenttweaker:musicc>.makePotionEffect(100, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicc>)){
+       player.removePotionEffect(<potion:contenttweaker:musicc>);
+       player.addPotionEffect(<potion:contenttweaker:musicd>.makePotionEffect(100, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicd>)){
+       player.removePotionEffect(<potion:contenttweaker:musicd>);
+       player.addPotionEffect(<potion:contenttweaker:musice>.makePotionEffect(50, 0, false, false));
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musice>)){
+       player.removePotionEffect(<potion:contenttweaker:musice>);
+       player.health -=10;
+        if(attacker.isPotionActive(<potion:contenttweaker:ismusic>)){
+       player.addPotionEffect(<potion:contenttweaker:nomusic>.makePotionEffect(600, 0, false, false));
+        }else{
+       player.addPotionEffect(<potion:contenttweaker:nomusic>.makePotionEffect(1200, 0, false, false));
+        }
+    }else {player.addPotionEffect(<potion:contenttweaker:musica>.makePotionEffect(100, 0, false, false));}
+    };
+
+newxy.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+    if(attacker.isPotionActive(<potion:contenttweaker:nomusic>)){
+return newDamage * 0.25f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musica>)){
+return newDamage * 1.6f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicb>)){
+return newDamage * 2.0f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicc>)){
+return newDamage * 2.25f;
+    }else if(attacker.isPotionActive(<potion:contenttweaker:musicd>)){
+return newDamage * 2.4f;
+    }else {
+return newDamage ;
+    }
+};
+
+newxy.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    //\u5320\u9B42\u8FDB\u5316\u7B49\u7EA7\u4FEE\u6B63
+    if (!isNull(tool.tag.EvolvedTier)) {
+        var materialId as string = "";
+        if (CotTicLib.getTicMaterial(tool).length != 0) {
+            materialId = (CotTicLib.getTicMaterial(tool) as string[])[0] as string;
+        }
+        for metal in EvolvedTiersMap {
+            if (materialId == metal) {
+                var tier as int = EvolvedTiersMap[metal][0] as int;
+                if (tool.tag.EvolvedTier as int != tier) {
+                    if (tier >= 3) {
+                        tool.mutable().updateTag({EvolvedTier: 3, EvolvedTierExtra: tier as int});
+                    } else {
+                        tool.mutable().updateTag({EvolvedTier: tier as int, EvolvedTierExtra: tier as int});
+                    }
+                }
+                break;
+            }
+        }
+    }
+};
+newxy.register();
+
+val fourk = TraitBuilder.create("fourk");
+fourk.color = 0xb69968;
+fourk.localizedName = "四钥协定";
+fourk.localizedDescription = "这里无需灯塔，它们的使命也截然不同§r\n§f攻击后随机获得以下效果中的随机一项：短时间的临时生命；短时间的攻击距离提升；攻击伤害提升；回复微量饱食度";
+fourk.addItem(<item:beto:keybag>);
+fourk.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var kei = Math.random();
+     val player as IPlayer = attacker;
+    if (kei>0.7){
+        return (6.0f + newDamage) as float;
+    }
+    else if (kei>0.4){
+    player.addPotionEffect(<potion:potioncore:reach>.makePotionEffect(100,2, false, false));
+    return newDamage;
+    }
+    else if (kei>0.1){
+    player.addPotionEffect(<potion:minecraft:absorption>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+    }
+    else {
+        player.foodStats.addStats(1,0.0);
+     return newDamage;   
+    }
+};
+
+fourk.register();
+
+val nooname = TraitBuilder.create("nooname");
+nooname.color = 0xb69968;
+nooname.localizedName = "无字碑文";
+nooname.localizedDescription = "无铭无痕，无功无过§r\n§f处于太阳祝福状态下强化伤害\n攻击霜冻敌人\n攻击敌人背部伤害增加";
+nooname.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+if(!target.world.remote){
+var faceingA as IFacing = attacker.getLastPortalDirection();
+var faceingT as IFacing = target.getLastPortalDirection();
+if(faceingA == faceingT){
+return(1.3f*newDamage) as float;
+}}
+return newDamage;
+};
+
+nooname.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+if(attacker.isPotionActive(<potion:mowziesmobs:suns_blessing>)){
+       return (2.0f+ newDamage) as float;
+        }
+return newDamage;
+};
+
+nooname.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+target.addPotionEffect(<potion:mowziesmobs:frozen>.makePotionEffect(25, 1, false, false));
+return newDamage;
+};
+
+nooname.register();
+
+val starlink = TraitBuilder.create("starlink");
+starlink.color = 0xb69968;
+starlink.localizedName = "星体链接";
+starlink.localizedDescription = "无光之星仍在闪耀§r\n§f伤害会根据星能力等级以及扭曲值是否足够低而变动";
+
+starlink.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+val player as IPlayer = attacker;
+val st = 0.1*player.getPerkLevel() as float;
+return (st+newDamage) as float;
+};
+
+starlink.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical) {
+    var warp as int = 0;
+val player as IPlayer = attacker;
+warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+if (warp < 10){return 2.0f+newDamage as float;}
+return newDamage as float;
+};
+
+starlink.register();
+
+
+val endknight = TraitBuilder.create("endknight");
+endknight.color = 0xb69968;
+endknight.localizedName = "最后的骑士";
+endknight.localizedDescription = "杀死大海！杀死大海！§r\n§f敌人血量越高，造成伤害越高（有上限），玩家处于水中或海洋群系时会强化这一效果\n若玩家攻击时处于海潮的气息状态下则会消耗掉海潮的气息并强化本次伤害";
+endknight.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var world as IWorld = attacker.world;
+    val player as IPlayer = attacker;
+    var bop = world.getBiome(player.position);
+    var heal as float = (target.health*0.01)as float;
+    var water as float = 1.0f+(0.06*heal)as float;
+    var watno as float = 1.0f+(0.04*heal)as float;
+    var wat as float = min(1.25,water)as float;
+    var wao as float = min(1.25,watno)as float;
+    if(attacker.isPotionActive(<potion:beto:seawind>)){
+       player.removePotionEffect(<potion:beto:seawind>);
+       return 1.2f*newDamage as float;
+    }
+    else if(attacker.isInWater & bop.name.contains("Ocean")){
+        return wat*newDamage as float;
+    }else{
+        return wao*newDamage as float;
+    }
+};
+
+endknight.register();
+
+val saligia = TraitBuilder.create("saligia");
+saligia.color = 0xb69968;
+saligia.localizedName = "七宗罪";
+saligia.localizedDescription = "给你的敌人施加撒旦的诅咒！§r\n§f每次攻击随机向敌人施加其中负面效果之一";
+saligia.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var rand = Math.random();
+    if (rand < 0.1){
+    target.addPotionEffect(<potion:mod_lavacow:corroded>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 0.2){
+    target.addPotionEffect(<potion:potioncore:vulnerable>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 0.3){
+    target.addPotionEffect(<potion:minecraft:blindness>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 0.4){
+    target.addPotionEffect(<potion:minecraft:wither>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 0.6){
+    target.addPotionEffect(<potion:potioncore:spin>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 0.8){
+    target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(20, 0, false, false));
+    }else if (rand < 1.0){
+    target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(20, 0, false, false));
+    }
+};
+saligia.register();
+
+
+val newsjy01 = TraitBuilder.create("newsjy01");
+newsjy01.color = 0xb69968;
+newsjy01.localizedName = "血饮魔精";
+newsjy01.localizedDescription = "只有弱者才接纳命运§r\n§f潜行攻击会概率治疗你\n如果玩家的血量在80%以上，增加潜行暴击伤害\n如果玩家的血量在80%及以下，增加潜行普通伤害";
+newsjy01.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+var rand = Math.random();
+if (attacker.isSneaking){
+if (rand < 0.25){
+    attacker.health += 6;
+}
+if (attacker.health < (attacker.maxHealth as float * 0.8f)){
+return newDamage*1.75f as float;
+}else{
+    if(isCritical){
+        return 2.0f * newDamage;
+    }else {return newDamage as float;}
+}
+}else {
+    return newDamage as float;
+}
+};
+newsjy01.register();
+
+
+val newsjy02 = TraitBuilder.create("newsjy02");
+newsjy02.color = 0xb69968;
+newsjy02.localizedName = "弑神之息";
+newsjy02.localizedDescription = "你不是神...但你的灵魂仍是我的盛宴§r\n§f在冲刺攻击后会造成更高伤害，给予敌人弑神怒焰减益并清除自身负面效果";
+newsjy02.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if (attacker.isSprinting){
+    if(!target.isPotionActive(<potion:contenttweaker:stopfore>)){
+target.addPotionEffect(<potion:contenttweaker:killgodfire>.makePotionEffect(200, 0, false, false));
+target.addPotionEffect(<potion:contenttweaker:stopfore>.makePotionEffect(900, 0, false, false));
+return 2.0f * newDamage as float;
+}else {return newDamage as float;}
+}else {return newDamage as float;}
+};
+newsjy02.register();
+
+
+val remana = TraitBuilder.create("remana");
+remana.color = Color.fromHex("142e8f").getIntColor(); 
+remana.localizedName = game.localize("贮魔Ⅰ");
+remana.localizedDescription = game.localize("自然会帮忙分担工具的伤痕§r\n§f概率消耗你身上的魔力来代替耐久损耗");
+
+
+remana.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    if (rand > 0.75){
+    var player as IEntity = entity;
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+remana.register();
+
+
+val remanab = TraitBuilder.create("remanab");
+remanab.color = Color.fromHex("142e8f").getIntColor(); 
+remanab.localizedName = game.localize("贮魔Ⅱ");
+remanab.localizedDescription = game.localize("自然会帮忙分担工具的伤痕§r\n§f更高概率消耗你身上的魔力来代替耐久损耗");
+
+
+remanab.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    if (rand > 0.5){
+    var player as IEntity = entity;
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+remanab.register();
+
+val remanac = TraitBuilder.create("remanac");
+remanac.color = Color.fromHex("142e8f").getIntColor(); 
+remanac.localizedName = game.localize("贮魔Ⅲ");
+remanac.localizedDescription = game.localize("自然会帮忙分担工具的伤痕§r\n§f极高概率消耗你身上的魔力来代替耐久损耗");
+
+
+remanac.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    if (rand > 0.25){
+    var player as IEntity = entity;
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+remanac.register();
+
+val reshadow = TraitBuilder.create("reshadow");
+reshadow.color = Color.fromHex("142e8f").getIntColor(); 
+reshadow.localizedName = game.localize("夜影");
+reshadow.localizedDescription = game.localize("黑夜会帮忙摆平工具的伤痕§r\n§f极高概率消耗你身上的魔力来代替耐久损耗，夜晚时转为不再消耗耐久和魔力");
+
+
+reshadow.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    if (entity.world.isDayTime()){
+    var rand = Math.random();
+    if (rand > 0.25){
+    var player as IEntity = entity;
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }}else{
+        return 0*newDamage;
+    }
+};
+reshadow.register();
+
+val reson = TraitBuilder.create("reson");
+reson.color = Color.fromHex("142e8f").getIntColor(); 
+reson.localizedName = game.localize("日之恩惠");
+reson.localizedDescription = game.localize("愿你不会招致王的灭亡§r\n§f白天时极高概率消耗比贮魔更少的魔力来代替耐久损耗，夜晚时不再拥有任何减免");
+
+reson.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    if (entity.world.isDayTime()){
+    var rand = Math.random();
+    if (rand > 0.25){
+    var player as IEntity = entity;
+    var yn as bool = (ManaHandler.requestManaExact(player, 50*damage,  true));
+    if(yn == true){
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }}else{
+        return newDamage;
+    }
+};
+reson.register();
+
+val manata = TraitBuilder.create("manata");
+manata.color = Color.fromHex("142e8f").getIntColor(); 
+manata.localizedName = game.localize("魔力释能");
+manata.localizedDescription = game.localize("从魔力能转化为动能§r\n§f每次攻击时消耗魔力提升攻击伤害");
+
+manata.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+val player as IPlayer = attacker;
+var yn as bool = (ManaHandler.requestManaExact(player, 6000,  true));
+ if(yn == true){
+return 1.5f*newDamage;
+ }else{
+     return newDamage;
+ }
+
+};
+manata.register();
+
+val manatb = TraitBuilder.create("manatb");
+manatb.color = Color.fromHex("142e8f").getIntColor(); 
+manatb.localizedName = game.localize("动能吸收");
+manatb.localizedDescription = game.localize("从动能转化为魔力能§r\n§f格挡非玩家攻击后，为玩家填充一些魔力");
+manatb.onBlock = function(thisTrait, tool, attacker, event) {
+    ManaHandler.dispatchMana(attacker, 1500, true); 
+};
+manatb.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   ManaHandler.dispatchMana(attacker, 1500, true); 
+    }
+};
+
+manatb.register();
+
+
+
+val manatc = TraitBuilder.create("manatc");
+manatc.color = Color.fromHex("142e8f").getIntColor(); 
+manatc.localizedName = game.localize("窃魔之刃");
+manatc.localizedDescription = game.localize("还是偷窃敌人的魔力更令人愉悦§r\n§f击杀生物后，为玩家填充魔力");
+
+manatc.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    if(!(attacker instanceof IPlayer))return;
+    var player as IPlayer = attacker;
+    if (damage>(target.health)){
+   ManaHandler.dispatchMana(player, 1500, true); 
+   }
+};
+
+manatc.register();
+
+TraitManager.detachAllTraits("extrabotany:ingotshadowium");
+
+val freshfood = TraitBuilder.create("freshfood");
+freshfood.color = 0xb69968;
+freshfood.localizedName = "保鲜";
+freshfood.localizedDescription = "“它们通常喜欢更新鲜的食物，但问题是...指的是谁？”§r\n§f攻击时概率为玩家回复饱食度和魔力，亦或者在玩家严重负伤时治疗玩家";
+freshfood.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var moon = Math.random();
+    var player as IPlayer = attacker;
+    
+        if(moon < 0.25){
+       player.foodStats.addStats(0,4.0);
+       ManaHandler.dispatchMana(attacker, 1500, true); 
+        }
+        else if(moon < 0.5){
+            player.foodStats.addStats(4,0.0);
+       ManaHandler.dispatchMana(attacker, 1500, true); 
+        }
+         else if(moon < 0.75){
+            if ((player.health *3)<player.maxHealth){
+                player.health +=5;
+                player.foodStats.addStats(4,0.0);
+       ManaHandler.dispatchMana(attacker, 1500, true); }
+           else return; 
+        }else return;
+   
+};
+freshfood.register();
+
+val egr01 = TraitBuilder.create("egr01");
+egr01.color = 0xb69968;
+egr01.localizedName = "异路推演";
+egr01.localizedDescription = "如果精灵门彼端的并非盟友而是伪善的掠食者...§r\n§f或许在另一个可能性中，截然不同的事件将世界导向了不同的命运...";
+//它本来就是一个识别用的空词条，你还希望在这里能找到什么，我的女装照吗？
+egr01.register();
+
+val ramparto = TraitBuilder.create("ramparto");
+ramparto.color = 0xb69968;
+ramparto.localizedName = "防壁";
+ramparto.localizedDescription = "傻子才不去防御！§r\n§f玩家格挡伤害后给予敌人缓慢效果";
+ramparto.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    attacker.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(100, 1, false, false));
+    }
+};
+
+ramparto.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   attacker.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(100, 1, false, false));
+    }
+};
+ramparto.register();
+
+val magnetizations = TraitBuilder.create("magnetizations");
+magnetizations.color = 0xb69968;
+magnetizations.localizedName = "磁化";
+magnetizations.localizedDescription = "这边是南磁极，那边是北磁极§r\n§f玩家格挡伤害后给予敌人磁化效果";
+magnetizations.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    attacker.addPotionEffect(<potion:contenttweaker:bewoman>.makePotionEffect(200, 0, false, false));
+    }
+};
+
+magnetizations.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   attacker.addPotionEffect(<potion:contenttweaker:bewoman>.makePotionEffect(200, 0, false, false));
+    }
+};
+magnetizations.register();
+
+val attractions = TraitBuilder.create("attractions");
+attractions.color = 0xb69968;
+attractions.localizedName = "磁吸";
+attractions.localizedDescription = "别跑太远！§r\n§f降低玩家对拥有磁化状态敌人的击退距离";
+attractions.calcKnockBack = function(trait, tool, attacker, target, damage, originalKnockBack, newKnockBack, isCritical) {
+   if (target.isPotionActive(<potion:contenttweaker:bewoman>)){
+    target.addPotionEffect(<potion:potioncore:solid_core>.makePotionEffect(40, 0, false, false));
+        return 0.3f*newKnockBack;
+   }else{
+    return newKnockBack;
+   }
+    
+};
+attractions.register();
+
+val egr02 = TraitBuilder.create("egr02");
+egr02.color = 0xb69968;
+egr02.localizedName = "异路推演";
+egr02.localizedDescription = "如果通用技术公司发现自家的外贸产品刚好完全符合军方某次招标的全部参数要求...§r\n§f或许在另一个可能性中，截然不同的事件将世界导向了不同的命运...";
+//如果你在仔细看这玩意说明你不长记性——这个是空词条
+egr02.register();
+
+val kangci = TraitBuilder.create("kangci");
+kangci.color = 0xb69968;
+kangci.localizedName = "抗磁";
+kangci.localizedDescription = "啊哈，你的磁吸地雷贴不上来！§r\n§f对拥有磁化效果的敌人造成更高的伤害";
+kangci.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if (target.isPotionActive(<potion:contenttweaker:bewoman>)){
+    return 1.75f*newDamage;
+}else{
+    return newDamage;
+}
+};
+kangci.register();
+
+val xiaoci = TraitBuilder.create("xiaoci");
+xiaoci.color = 0xb69968;
+xiaoci.localizedName = "消磁";
+xiaoci.localizedDescription = "可以有效防止机壳对机器内部结构运作造成影响§r\n§f攻击后消除敌人身上的磁化效果并赋予弱点标记效果";
+xiaoci.onHit = function(trait, tool, attacker, target, damage, isCritical){
+   if (target.isPotionActive(<potion:contenttweaker:bewoman>)){
+    target.removePotionEffect(<potion:contenttweaker:bewoman>);
+    target.addPotionEffect(<potion:contenttweaker:biaoji>.makePotionEffect(200, 0, false, false));
+}else{
+   return;
+}
+};
+xiaoci.register();
+
+val biaoji = TraitBuilder.create("biaoji");
+biaoji.color = 0xb69968;
+biaoji.localizedName = "磁吸标记";
+biaoji.localizedDescription = "瞄准了，往那打§r\n§f对拥有弱点标记的敌人造成更高伤害并赋予其磁化效果";
+biaoji.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+val player as IPlayer = attacker;
+ if(target.isPotionActive(<potion:contenttweaker:biaoji>)){
+    target.addPotionEffect(<potion:contenttweaker:bewoman>.makePotionEffect(200, 0, false, false));
+return 1.55f*newDamage;
+ }else{
+     return newDamage;
+ }
+};
+biaoji.register();
+
+val baofan = TraitBuilder.create("baofan");
+baofan.color = 0xb69968;
+baofan.localizedName = "反应装甲";
+baofan.localizedDescription = "来，往这打§r\n§f格挡时引发一场不会破坏方块的爆炸，若敌人拥有缓慢或弱点标记则爆炸规模和伤害更大";
+baofan.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    if(attacker.isPotionActive(<potion:contenttweaker:biaoji>)||attacker.isPotionActive(<potion:minecraft:slowness>)){
+    player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 2, false, false));
+    }else{
+    player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 0, false, false));
+    }
+    }
+};
+
+baofan.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    if(attacker.isPotionActive(<potion:contenttweaker:biaoji>)||attacker.isPotionActive(<potion:minecraft:slowness>)){
+    player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 2, false, false));
+    }else{
+    player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 0, false, false));
+    }
+    }
+};
+baofan.register();
+
+val biaojibs = TraitBuilder.create("biaojibs");
+biaojibs.color = 0xb69968;
+biaojibs.localizedName = "标记部署";
+biaojibs.localizedDescription = "敌人位置已标定，请求打击§r\n§f攻击后若敌人拥有缓慢效果则将其消除并附加弱点标记效果";
+biaojibs.onHit = function(trait, tool, attacker, target, damage, isCritical){
+   if (target.isPotionActive(<potion:minecraft:slowness>)){
+    target.removePotionEffect(<potion:minecraft:slowness>);
+    target.addPotionEffect(<potion:contenttweaker:biaoji>.makePotionEffect(200, 0, false, false));
+}else{
+   return;
+}
+};
+biaojibs.register();
+
+val shoushud = TraitBuilder.create("shoushud");
+shoushud.color = 0xb69968;
+shoushud.localizedName = "精准打击";
+shoushud.localizedDescription = "收到，即将进行手术刀式打击§r\n§f对拥有缓慢和弱点标记效果的敌人造成的伤害提升";
+shoushud.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if (target.isPotionActive(<potion:minecraft:slowness>)){
+    return 1.7f*newDamage;
+}else if (target.isPotionActive(<potion:contenttweaker:biaoji>)){
+    return 1.7f*newDamage;
+}else  {
+    return newDamage;
+}//我知道套俩if比用||效率低，但这种地方就让我偷个懒吧XD
+};
+shoushud.register();
+
+val gaomi = TraitBuilder.create("gaomi");
+gaomi.color = 0xb69968;
+gaomi.localizedName = "高密度";
+gaomi.localizedDescription = "它才该叫千金沉重§r\n§f格挡后给予敌人挖掘疲劳效果";
+gaomi.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    attacker.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(100, 2, false, false));
+    }
+};
+
+gaomi.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+  attacker.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(100, 2, false, false));
+    }
+};
+gaomi.register();
+
+val unholy = TraitBuilder.create("unholy");
+unholy.color = 0xb69968;
+unholy.localizedName = "反神圣";
+unholy.localizedDescription = "圣光就是个谎言！§r\n§f对非亡灵生物造成伤害提升(平庸状态下的敌人同样被视为非亡灵生物)，敌人拥有弱点标记时效果进一步提升";
+unholy.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+if((!target.isUndead)||target.isPotionActive(<potion:contenttweaker:bewoman>)){
+    if(attacker.isPotionActive(<potion:contenttweaker:biaoji>)){
+    return 1.63f*newDamage;
+    }else{
+    return 1.4f*newDamage;
+    }
+}else{return newDamage;
+}
+};
+unholy.register();
+
+val nevergod = TraitBuilder.create("nevergod");
+nevergod.color = 0xb69968;
+nevergod.localizedName = "抗神话";
+nevergod.localizedDescription = "你是说有巨龙在天上飞？找借口也要像样一点吧...§r\n§f格挡攻击后，若敌人具有弱点标记，则赋予其平庸效果";
+ nevergod.onBlock = function(trait, tool, player, event) {
+   if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+        var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+        if(attacker.isPotionActive(<potion:contenttweaker:biaoji>)){
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    attacker.removePotionEffect(<potion:contenttweaker:biaoji>);
+    attacker.addPotionEffect(<potion:beto:human>.makePotionEffect(100, 0, false, false));
+    }else return;
+    }};
+
+nevergod.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+  if(attacker.isPotionActive(<potion:contenttweaker:biaoji>)){
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    attacker.removePotionEffect(<potion:contenttweaker:biaoji>);
+    attacker.addPotionEffect(<potion:beto:human>.makePotionEffect(100, 0, false, false));
+    }else return;
+    }
+};
+nevergod.register();
+
+val assliver = TraitBuilder.create("assliver");
+assliver.color = 0xb69968;
+assliver.localizedName = "权柄模拟";
+assliver.localizedDescription = "你知道吗，所谓上帝是可以用公式推演出来的§r\n§f攻击后赋予敌人平庸和弱点标记";
+assliver.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    target.addPotionEffect(<potion:beto:human>.makePotionEffect(200, 0, false, false));
+    target.addPotionEffect(<potion:contenttweaker:biaoji>.makePotionEffect(200, 0, false, false));
+
+};
+assliver.register();
+
+
+
+val gddzz = TraitBuilder.create("gddzz");
+gddzz.color = 0x7bbfea;
+gddzz.localizedName = "肝帝的执着";
+gddzz.localizedDescription = "肝帝的执着感动了上天§r\n§f为你的工具赋予抢夺V\n§f(攻击一次后以触发效果)";
+gddzz.addItem(<item:text:ganzangshelder>);
+gddzz.canApplyTogetherTrait = function(thisTrait, otherTrait) {
+    return otherTrait != "shibiewu1" ;
+};
+gddzz.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    var item as IItemStack = tool;
+    if(player.world.remote||isNull(item))return;
+    //tool.mutable().updateTag({ench: [{lvl: 5 as short, id: 21 as short}]});
+     
+        var traitid as string = "gddzz";
+        var traitid2 as string = "shibiewu1";
+        var removetrait as IData = [traitid as string];
+        var removemodifier as IData = [{identifier: traitid, color: 0x7bbfea, level: 1}];
+        var addmodifier as IData = [{identifier: traitid2, color: 0x7bbfea, level: 1}];
+        var addtrait as IData = [traitid2 as string];
+        var enchList as IData = item.tag.ench;
+
+        var data as IData = tool.tag;
+        var modifiers as IData = data.Modifiers;
+        var traits as IData = data.Traits;
+       
+        for trait in CotTicTraitLib.getTicTrait(tool) {
+                    if (trait has "shibiewu1") return;
+                }
+        var newEnchList as IData = 
+            enchList.deepUpdate([{"id":21 as short,"lvl":5 as short}],MERGE);
+            tool.mutable().updateTag({Modifiers : modifiers.deepUpdate(removemodifier, REMOVE), Traits : traits.deepUpdate(removetrait, REMOVE)});
+            tool.mutable().updateTag({Modifiers : modifiers.deepUpdate(addmodifier, APPEND), Traits : traits.deepUpdate(addtrait, APPEND)});
+        item.mutable().updateTag({"ench":newEnchList});
+    
+    };
+
+gddzz.register();
+
+/* 此段范例取自mc百科教程https://www.mcmod.cn/post/3839.html，置于此处参考用
+events.onPlayerRightClickItem(function(event as PlayerRightClickItemEvent){
+    var player as IPlayer = event.player;
+    var item as IItemStack = event.item;
+    if(player.world.remote||isNull(item)||isNull(player.currentItem)||!player.currentItem.matchesExact(item))return;
+    
+    //这里开始操作NBT
+    //由于附魔相关NBT结构为：{ench:[{id:<value> as short,lvl:<value> as short},......]}
+    //我们需要对物品的NBT进行访问：
+    if(
+        !isNull(item.tag)&&//物品有NBT
+        !isNull(item.tag.ench)//物品有附魔的NBT
+    ){
+        var enchList as IData = item.tag.ench;//取出附魔相关NBT数据，这是一个DataList
+        var check as bool = false ;//给一个check变量储存检测结果
+        if(enchList.length==0) return;//遍历前检测数组长度是否为0，养成好习惯
+        //准备遍历
+        for i in 0 .. enchList.length{
+            if(enchList[i].id.asInt()==70){ //检测到经验修补魔咒
+                check = true;//修改标记
+                player.sendChat("Mending Found!");//输出调试
+                break;//退出循环
+            }
+        }
+        if(!check)return;//如果没有经验修补则直接return
+        var newEnchList as IData = 
+            enchList.deepUpdate([{"id":70 as short,"lvl":1 as short}],REMOVE)//删去经验修补
+                         .deepUpdate([{"id":34 as short,"lvl": 1 as short}],MERGE);//添加耐久
+        item.mutable().updateTag({"ench":newEnchList});//更新tag
+    }
+});
+
+*/
+
+val shibiewu1 = TraitBuilder.create("shibiewu1");
+shibiewu1.color = 0xb69968;
+shibiewu1.localizedName = "已触发(肝帝的执着)";
+shibiewu1.localizedDescription = "肝帝的执着感动了上天§r\n§f为你的工具赋予抢夺V\n§f(已触发)";
+
+shibiewu1.register();
+/* 这个附魔没用
+val moreshoot = TraitBuilder.create("moreshoot");
+moreshoot.color = 0x7bbfea;
+moreshoot.localizedName = "多重射击";
+moreshoot.localizedDescription = "你有试过让每发弩箭都命中吗§r\n§f为你的弩赋予多重射击\n§f(攻击一次后以触发效果)";
+moreshoot.addItem(<item:crossbows:crossbow>);
+moreshoot.canApplyTogetherTrait = function(thisTrait, otherTrait) {
+    return otherTrait != "shibiewu2" ;
+};
+moreshoot.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    var item as IItemStack = tool;
+    if(player.world.remote||isNull(item))return;
+    //tool.mutable().updateTag({ench: [{lvl: 5 as short, id: 21 as short}]});
+     
+        var traitid as string = "moreshoot";
+        var traitid2 as string = "shibiewu1";
+        var removetrait as IData = [traitid as string];
+        var removemodifier as IData = [{identifier: traitid, color: 0x7bbfea, level: 1}];
+        var addmodifier as IData = [{identifier: traitid2, color: 0x7bbfea, level: 1}];
+        var addtrait as IData = [traitid2 as string];
+        var enchList as IData = item.tag.ench;
+
+        var data as IData = tool.tag;
+        var modifiers as IData = data.Modifiers;
+        var traits as IData = data.Traits;
+       
+        for trait in CotTicTraitLib.getTicTrait(tool) {
+                    if (trait has "shibiewu1") return;
+                }
+        var newEnchList as IData = 
+            enchList.deepUpdate([{"id":80 as short,"lvl":1 as short}],MERGE);
+            tool.mutable().updateTag({Modifiers : modifiers.deepUpdate(removemodifier, REMOVE), Traits : traits.deepUpdate(removetrait, REMOVE)});
+            tool.mutable().updateTag({Modifiers : modifiers.deepUpdate(addmodifier, APPEND), Traits : traits.deepUpdate(addtrait, APPEND)});
+        item.mutable().updateTag({"ench":newEnchList});
+    
+    };
+
+moreshoot.register();
+
+val shibiewu2 = TraitBuilder.create("shibiewu2");
+shibiewu2.color = 0xb69968;
+shibiewu2.localizedName = "已触发(多重射击)";
+shibiewu2.localizedDescription = "你有试过让每发弩箭都命中吗§r\n§f为你的弩赋予多重射击\n§f(已触发)";
+
+shibiewu2.register();*/
+
+val revis = TraitBuilder.create("revis");
+revis.color = Color.fromHex("142e8f").getIntColor(); 
+revis.localizedName = game.localize("贮灵Ⅰ");
+revis.localizedDescription = game.localize("小型化的灵气节点会汲取灵气分担工具的伤痕...§r\n§f概率消耗你所处位置的灵气来代替耐久损耗");
+
+
+revis.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    var player as IEntity = entity;
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.65){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+revis.register();
+
+val revisb = TraitBuilder.create("revisb");
+revisb.color = Color.fromHex("142e8f").getIntColor(); 
+revisb.localizedName = game.localize("贮灵Ⅱ");
+revisb.localizedDescription = game.localize("小型化的灵气节点会汲取灵气分担工具的伤痕...§r\n§f更高概率消耗你所处位置的灵气来代替耐久损耗");
+
+
+revisb.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    var player as IEntity = entity;
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.4){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+revisb.register();
+
+val revisc = TraitBuilder.create("revisc");
+revisc.color = Color.fromHex("142e8f").getIntColor(); 
+revisc.localizedName = game.localize("贮灵Ⅲ");
+revisc.localizedDescription = game.localize("小型化的灵气节点会汲取灵气分担工具的伤痕...§r\n§f极高概率消耗你所处位置的灵气来代替耐久损耗");
+
+
+revisc.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    var player as IEntity = entity;
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.15){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newDamage;
+    }else{
+    return newDamage;
+    } }else{
+       return newDamage;
+    }
+};
+revisc.register();
+
+val warprank = TraitBuilder.create("warprank");
+warprank.color = 0xb69968;
+warprank.localizedName = "恶作剧";
+warprank.localizedDescription = "嘿，来玩吧！§r\n§f提升你攻击造成的伤害，但是攻击后会使你的临时扭曲随机增加或减少";
+warprank.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+ if(Math.random() <= 0.3){
+player.warpTemporary += 5;
+ }else if(Math.random() <= 0.6){
+    player.warpTemporary -= 2;
+ }else{
+    player.warpTemporary += 0;
+ }
+    return 1.15f*newDamage;
+   
+};
+warprank.register();
+
+val fatumangly = TraitBuilder.create("fatumangly");
+fatumangly.color = 0xb69968;
+fatumangly.localizedName = "法图之怒";
+fatumangly.localizedDescription = "正与邪！§r\n§f将武器的一部分伤害转化为伤害更高且无视护甲的镰刀形剑气";
+fatumangly.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    var p = target.position; 
+    var w = target.world; 
+    var player =attacker;
+    if(!target.world.remote){
+           var arrow as IEntityArrow = <entity:thaumadditions:mithminite_scythe>.createEntity(w);
+
+                                arrow.shoot(player, player.rotationPitch, player.rotationYaw, 0.0f, 0.0f, 0.0f);
+
+                                arrow.shooter = player;
+
+                                w.spawnEntity(arrow);
+        /*<entity:thaumadditions:mithminite_scythe>.setNBT("{Motion:[0.0,0.0,0.0],ownerName:"+attacker+"}");
+        <entity:thaumadditions:mithminite_scythe>.spawnEntity(w, p);*/
+}
+};
+
+fatumangly.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    
+    return (newDamage - 7.0f) as float;
+   
+};
+fatumangly.register();
+
+val stondboundo = TraitBuilder.create("stondboundo");
+stondboundo.color = Color.fromHex("142e8f").getIntColor(); 
+stondboundo.localizedName = game.localize("坚实");
+stondboundo.localizedDescription = game.localize("你的工具深爱着你！§r\n§f你的工具使用时极高概率不消耗耐久");
+
+
+stondboundo.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    if (rand > 0.2){
+       return 0*newDamage;
+       }else{
+        return newDamage;
+    }
+};
+stondboundo.register();
+
+
+val herofvillage = TraitBuilder.create("herofvillage");
+herofvillage.color = Color.fromHex("142e8f").getIntColor(); 
+herofvillage.localizedName = game.localize("村庄嘤雄");
+herofvillage.localizedDescription = game.localize("情况好转了！大概吧...§r\n§f若玩家攻击时拥有不祥之兆，给予玩家村庄英雄效果");
+
+herofvillage.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+val player as IPlayer = attacker;
+ if(attacker.isPotionActive(<potion:raids:bad_omen>)){
+    attacker.addPotionEffect(<potion:raids:hero_of_the_village>.makePotionEffect(200, 0, false, false));
+return 1.05f*newDamage;
+ }else{
+     return newDamage;
+ }
+};
+
+herofvillage.register();
+
+val obseribility = TraitBuilder.create("obseribility");
+obseribility.color = Color.fromHex("9b95c9").getIntColor(); 
+obseribility.localizedName = game.localize("多维观测");
+obseribility.localizedDescription = game.localize("即使已被剪定，我们仍旧可以从这些世界的可能性中发掘力量§r\n§f若武器带有异路推演词条，提升武器的攻击速度");
+obseribility.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if (owner instanceof IPlayer) {
+        var player as IPlayer = owner;
+        if (CotTicTraitLib.hasTicTrait(tool, "egr01"))||(CotTicTraitLib.hasTicTrait(tool, "egr02")) {
+             CotTicLib.addTicAttackSpeedMultiplier(tool, 0.6, "obseribility_speedup");
+        }
+        
+    }
+};
+obseribility.register();
+
+//力量，抗性提升，速度，急迫，优先级从左到右
+val abandon = TraitBuilder.create("abandon");
+abandon.color = Color.fromHex("9b95c9").getIntColor(); 
+abandon.localizedName = game.localize("背弃");
+abandon.localizedDescription = game.localize("▓▓▓▓▓▓§r\n§f进行攻击或格挡后，偷取敌人身上特定的正面药水效果并将敌人身上的药水效果反转");
+
+abandon.onHit = function(trait, tool, attacker, target, damage, isCritical){
+    if(target.isPotionActive(<potion:minecraft:strength>)){
+    attacker.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(300, 0, false, false));
+    target.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(target.isPotionActive(<potion:minecraft:resistance>)){
+    attacker.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(300, 0, false, false));
+    target.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(target.isPotionActive(<potion:minecraft:speed>)){
+    attacker.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(300, 0, false, false));
+    target.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(target.isPotionActive(<potion:minecraft:haste>)){
+    attacker.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(300, 0, false, false));
+    target.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else{target.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));}
+};
+
+abandon.onBlock = function(trait, tool, player, event) {
+   if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+        var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+        if(attacker.isPotionActive(<potion:minecraft:strength>)){
+    player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:resistance>)){
+    player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:speed>)){
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:haste>)){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else{attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));}
+    }};
+
+abandon.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+  if(attacker.isPotionActive(<potion:minecraft:strength>)){
+    player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:resistance>)){
+    player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:speed>)){
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else if(attacker.isPotionActive(<potion:minecraft:haste>)){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(300, 0, false, false));
+    attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));
+}else{attacker.addPotionEffect(<potion:potioncore:invert>.makePotionEffect(1, 0, false, false));}
+    }
+};
+
+abandon.register();
+
+val contemptuous = TraitBuilder.create("contemptuous");
+contemptuous.color = Color.fromHex("9b95c9").getIntColor(); 
+contemptuous.localizedName = game.localize("蔑尽");
+contemptuous.localizedDescription = game.localize("░░░░░░，░░░░░░░░§r\n§f玩家血量低于一定比例时，攻击额外追加等于攻击力一定比例但不致死的真实伤害");
+contemptuous.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.health <( attacker.maxHealth as float * 0.28f)){
+        if(target.health >( originalDamage as float * 0.5f)){
+        target.health -= originalDamage as float * 0.5f;
+        return newDamage;
+    }else{
+       return newDamage; 
+    }
+}else{
+       return newDamage; 
+}};
+contemptuous.register();
+
+val voidability = TraitBuilder.create("voidability");
+voidability.color = 0xffaadd;
+voidability.localizedName = "虚空权能";
+voidability.localizedDescription = "█████§r\n§f提高暴击伤害";
+voidability.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+        return 1.55f * newDamage;
+    }
+    return newDamage;
+};
+voidability.register();
+/*
+val sandersaber = TraitBuilder.create("sandersaber");
+sandersaber.color = 0xffaadd;
+sandersaber.localizedName = "风雷电闪";
+sandersaber.localizedDescription = "辗转腾挪§r\n§f攻击敌人时可以触发连锁闪电，弹射的电弧将会波及其他敌人";
+sandersaber.addItem(<item:minecraft:egg>);
+sandersaber.afterHit = function(trait, tool, attacker, target, damageDealt, wasCritical, wasHit) {
+    val player as IPlayer = attacker;
+    var item as IItemStack = tool;
+
+   
+        var traitid2 as string = "shibiewu2";
+        var addmodifier as IData = [{identifier: traitid2, color: 0x7bbfea, level: 1}];
+        var addtrait as IData = [traitid2 as string];
+    if(player.world.remote||isNull(item))return;
+    for trait in CotTicTraitLib.getTicTrait(tool) {
+                    if (trait has "shibiewu2") return;
+                }
+                
+    //tool.mutable().updateTag({ench: [{lvl: 5 as short, id: 21 as short}]});
+     
+        var enchList as IData = item.tag.infench;
+
+        var data as IData = tool.tag;
+       
+        var newEnchList as IData = 
+            enchList.deepUpdate([{lvl: 5 as short, id: 5 as short}],MERGE);
+            tool.mutable().updateTag({Modifiers : modifiers.deepUpdate(addmodifier, APPEND), Traits : traits.deepUpdate(addtrait, APPEND)});
+        item.mutable().updateTag({"infench":newEnchList});
+    
+    };
+sandersaber.register();
+
+val shibiewu2 = TraitBuilder.create("shibiewu2");
+shibiewu2.color = 0xb69968;
+shibiewu2.localizedName = "弧光";
+shibiewu2.localizedDescription = "你的武器具有了闪电链的效果";
+
+shibiewu2.register(); */
+
+val visget = TraitBuilder.create("visget");
+visget.color = 0xffaadd;
+visget.localizedName = "气场吸收";
+visget.localizedDescription = "良好的灵气传导率！§r\n§f攻击时消耗区域内灵气提升伤害，若玩家血量低于一定程度则改为消耗区域中的咒波";
+visget.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+   var rand = Math.random();
+    var player as IEntity = attacker;
+    var player2 as IPlayer = attacker;
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    var flux as float =world.getFlux(pos);
+    if((vis >= 10.0f)&&(player2.health >= 0.33*player2.maxHealth)){
+        world.drainVis(pos,5.0f);
+       return 1.55f*newDamage as float;
+    }else if((flux >= 30.0f)&&(player2.health < (0.33*player2.maxHealth))){
+        world.drainFlux(pos,0.5f);
+    return 1.55f*newDamage as float;
+    }else {return newDamage;}
+};
+visget.register();
+
+val extensibility = TraitBuilder.create("extensibility");
+extensibility.color = 0xffaadd;
+extensibility.localizedName = "延展性";
+extensibility.localizedDescription = "“轻如羽毛，坚如龙鳞。”§r\n§f其制成的造物拥有额外的攻击速度和挖掘速度";
+
+extensibility.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if (owner instanceof IPlayer) {
+        var player as IPlayer = owner;
+             CotTicLib.addTicAttackSpeedMultiplier(tool, 0.8, "extensibility_speedup");
+             CotTicLib.addTicMiningSpeed(tool, 1.2, "extensibility_wspeedup");
+        
+    }
+};
+extensibility.register();
+
+val sparkmouth = TraitBuilder.create("sparkmouth");
+sparkmouth.color = 0xffaadd;
+sparkmouth.localizedName = "尖喙利爪";
+sparkmouth.localizedDescription = "“双重尖锐”§r\n§f若所在武器为初始状态下可横扫的武器，则使攻击速度更高。\n§f若玩家拥有幸运效果，则攻击伤害提升";
+sparkmouth.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.isPotionActive(<potion:minecraft:luck>)){
+        return 1.25f * newDamage;
+    }else{
+return  newDamage ;
+    }
+};
+sparkmouth.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if (owner instanceof IPlayer) {
+        var player as IPlayer = owner;
+        var item = tool.definition.ores;
+        if(item has <ore:CanSweep>){
+             CotTicLib.addTicAttackSpeedMultiplier(tool, 0.15, "sparkmouth_speedup");
+        }
+    }
+};
+sparkmouth.register();
+
+val predation = TraitBuilder.create("predation");
+predation.color = 0xffaadd;
+predation.localizedName = "掠食";
+predation.localizedDescription = "有时靠利爪...有时也靠尥蹶子？§r\n§f暴击时给予敌人流血效果并造成额外的伤害";
+predation.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+return (3.5f + newDamage)as float;
+target.addPotionEffect(<potion:totaltinkers:hemorrhage>.makePotionEffect(600, 0, false, false));
+    }else{
+    return newDamage;}
+};
+
+predation.register();
+
+
+
+val machamp = TraitBuilder.create("machamp");
+machamp.color = 0xffaadd;
+machamp.localizedName = "怪力";
+machamp.localizedDescription = "全部砸扁！§r\n§f以降低攻击速度为代价提升攻击伤害\n§f若该武器为重型武器则改为略微提升攻击速度且进一步提升伤害";
+machamp.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if (attacker instanceof IPlayer) {
+        var player as IPlayer = attacker;
+        var item = tool.definition.ores;
+        if(item has <ore:Bigweapon>){
+            return 1.45f * newDamage;
+        }else{
+            return 1.35f * newDamage;
+        }
+    }else{
+        return newDamage;
+    }
+};
+machamp.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if (owner instanceof IPlayer) {
+        var player as IPlayer = owner;
+        var item = tool.definition.ores;
+        if(item has <ore:Bigweapon>){
+             CotTicLib.addTicAttackSpeedMultiplier(tool, 0.10, "machamp_speedup");
+        }else{
+            CotTicLib.addTicAttackSpeedMultiplier(tool, -0.25, "machamp_speeddown");
+        }
+    }
+};
+machamp.register();
+
+val luanshen = TraitBuilder.create("luanshen");
+luanshen.color = 0xffaadd;
+luanshen.localizedName = "乱神";
+luanshen.localizedDescription = "折成三角！§r\n§f暴击时给予敌人缓慢效果并造成额外的伤害";
+luanshen.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(105, 0, false, false));
+return (3.5f + newDamage)as float;
+    }else{
+    return newDamage;}
+};
+
+luanshen.register();
+
+val perseus = TraitBuilder.create("perseus");
+perseus.color = Color.fromHex("142e8f").getIntColor(); 
+perseus.localizedName = game.localize("珀耳修斯之盾");
+perseus.localizedDescription = game.localize("接近于正版货的赝品，也如镜子一般光滑！§r\n§f格挡后赋予敌人沉重效果（无法免疫蛇发女妖的石化）");
+perseus.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+   attacker.addPotionEffect(<potion:potioncore:weight>.makePotionEffect(300, 0, false, false));
+   }
+};
+perseus.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   attacker.addPotionEffect(<potion:potioncore:weight>.makePotionEffect(300, 0, false, false));
+    }
+};
+
+perseus.register();
+
+val medusaeye = TraitBuilder.create("medusaeye");
+medusaeye.color = 0xffaadd;
+medusaeye.localizedName = "美杜莎之瞳";
+medusaeye.localizedDescription = "“看着我的眼睛...”§r\n§f攻击后赋予敌人沉重效果\n§f若该武器为可格挡武器则额外赋予敌人缓慢与挖掘疲劳效果";
+medusaeye.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if (attacker instanceof IPlayer) {
+        var player as IPlayer = attacker;
+        var item = tool.definition.ores;
+        if(item has <ore:CanSheld>){
+         target.addPotionEffect(<potion:potioncore:weight>.makePotionEffect(300, 0, false, false));
+         target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(300, 0, false, false));
+         target.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(300, 0, false, false));
+            return 1.05f * newDamage;
+        }else{
+            target.addPotionEffect(<potion:potioncore:weight>.makePotionEffect(300, 0, false, false));
+            return  newDamage;
+        }
+    }else{return newDamage;}
+};
+
+medusaeye.register();
+
+val havenoeye = TraitBuilder.create("havenoeye");
+havenoeye.color = Color.fromHex("142e8f").getIntColor(); 
+havenoeye.localizedName = game.localize("失目");
+havenoeye.localizedDescription = game.localize("巨人因轻敌而失目，又因失目而暴怒§r\n§f处于失明状态时造成伤害提升\n§f若该武器为可副手攻击武器则攻击和受击赋予敌人发光效果且攻击伤害进一步提升");
+havenoeye.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if (attacker instanceof IPlayer) {
+        var player as IPlayer = attacker;
+        var item = tool.definition.ores;
+        if(player.isPotionActive(<potion:minecraft:blindness>)){
+        if(item has <ore:CanSweep>){
+            target.addPotionEffect(<potion:minecraft:glowing>.makePotionEffect(300, 0, false, false));
+            return 1.75f * newDamage;
+        }else{
+            return 1.5f * newDamage;
+        }}else{
+            return newDamage;
+        }
+    }else{
+            return newDamage;
+        }
+};
+havenoeye.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if (attacker instanceof IPlayer) {
+        var player as IPlayer = attacker;
+        var item = tool.definition.ores;
+        if(player.isPotionActive(<potion:minecraft:blindness>)){
+        if(item has <ore:CanSweep>){
+            attacker.addPotionEffect(<potion:minecraft:glowing>.makePotionEffect(300, 0, false, false));
+        }}}
+};
+
+havenoeye.register();
+
+val jianta = TraitBuilder.create("jianta");
+jianta.color = 0xffaadd;
+jianta.localizedName = "践踏";
+jianta.localizedDescription = "巨人抬起右腿，将士兵踩成肉泥§r\n§f暴击时赋予敌人虚弱效果并击飞周围敌人，同时赋予自身失明效果";
+jianta.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+attacker.addPotionEffect(<potion:minecraft:blindness>.makePotionEffect(100, 0, false, false));
+target.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(300, 0, false, false));
+target.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(10, 0, false, false));
+return (0.5f + newDamage)as float;
+    }else{
+    return newDamage;}
+};
+
+jianta.register();
+
+val crychild = TraitBuilder.create("crychild");
+crychild.color = 0xffaadd;
+crychild.localizedName = "悲涕";
+crychild.localizedDescription = "“没人能替悲伤的我哭泣”§r\n§f极高概率不消耗耐久，但是会降低攻击伤害";
+crychild.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    
+    return 0.7f*newDamage;
+};
+
+crychild.onToolDamage = function(thisTrait, tool, damage, newDamage, entity){
+    var rand = Math.random();
+    if (rand > 0.2){
+       return 0*newDamage;
+       }else{
+        return newDamage;
+    }
+};
+
+crychild.register();
+
+val refuse = TraitBuilder.create("refuse");
+refuse.color = 0xffaadd;
+refuse.localizedName = "坚辞";
+refuse.localizedDescription = "“没人能替抗拒的我推辞”§r\n§f玩家血量低于一定程度时，增加造成的伤害，暴击伤害则会被进一步增加";
+
+refuse.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(attacker.health <( attacker.maxHealth as float * 0.45f)){
+        if(isCritical){
+        return 1.6f*newDamage;
+    }else{
+       return 1.35f*newDamage; 
+    }
+}else{
+       return newDamage; 
+}};
+
+refuse.register();
+
+
+val conservative01 = TraitBuilder.create("conservative01");
+conservative01.color = 0xffaadd;
+conservative01.localizedName = "不屈";
+conservative01.localizedDescription = "“没人能替反抗的我妥协”§r\n§f格挡后赋予自身抗火效果";
+
+conservative01.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+   player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+   }
+};
+conservative01.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(ishield(player)){
+   player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+    }
+};
+
+conservative01.register();
+
+
+
+val conservative02 = TraitBuilder.create("conservative02");
+conservative02.color = 0xffaadd;
+conservative02.localizedName = "不屈";
+conservative02.localizedDescription = "“没人能替反抗的我妥协”§r\n§f格挡后赋予自身抗火效果 \n§f若所处武器为可格挡武器，则提升武器的攻击力。";
+
+conservative02.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+   player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+   }
+};
+conservative02.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+   player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+    }
+};
+conservative02.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+    if (owner instanceof IPlayer) {
+        var player as IPlayer = owner;
+        var item = tool.definition.ores;
+        if(item has <ore:CanSheld>){
+             CotTicLib.addTicAttack(tool, 4.50, "conservative02_attackup");
+        }else{
+            CotTicLib.addTicAttack(tool, 0.00f, "conservative02_attackup");
+        }
+    }
+};
+conservative02.register();
+
+val refraction = TraitBuilder.create("refraction");
+refraction.color = 0xffaadd;
+refraction.localizedName = "折射";
+refraction.localizedDescription = "璀璨夺目！§r\n§f暴击时附加基于攻击力一定百分比的魔法伤害";
+refraction.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer = attacker;
+    if(isCritical){
+        var damage as IDamageSource =IDamageSource.createPlayerDamage(player);
+        var madamge as IDamageSource = damage.setMagicDamage();
+target.attackEntityFrom(madamge , newDamage * 0.15f);
+return newDamage;
+    }else{
+    return newDamage;}
+};
+
+refraction.register();
+
+val counterattack = TraitBuilder.create("counterattack");
+counterattack.color = 0xb8a8c8e;
+counterattack.localizedName = "攻击守势";
+counterattack.localizedDescription = "盾牌猛击！§r\n§f完美格挡后一段时间内的下一次攻击必定暴击且提高暴击倍率加成";
+counterattack.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+    player.addPotionEffect(<potion:contenttweaker:voidmind>.makePotionEffect(100, 0, false, false));
+    }
+};
+
+counterattack.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(player.isPotionActive(<potion:contenttweaker:shelding>)){
+  player.addPotionEffect(<potion:contenttweaker:voidmind>.makePotionEffect(100, 0, false, false));
+    }
+};
+
+counterattack.calcCrit = function(thisTrait, tool, attacker, target) {
+if(attacker.isPotionActive(<potion:contenttweaker:voidmind>)){
+  attacker.removePotionEffect(<potion:contenttweaker:voidmind>);
+  return true;
+    }else{
+      return false;  
+    }
+};
+
+counterattack.register();
+
+
+val moditest = TraitBuilder.create("moditest");
+moditest.color = 0xffaadd;
+moditest.localizedName = "moditest";
+moditest.localizedDescription = "moditest";
+
+moditest.onUpdate = function(trait, tool, world, owner, itemSlot, isSelected) {
+             CotTicLib.addTicFreeModifiers(tool, 3, "moditest_frmodi");
+    
+};
+moditest.register();
+
+val boomstickcalc = TraitBuilder.create("boomstickcalc");
+boomstickcalc.color = 0xf6f5ec;
+boomstickcalc.localizedName = "精确";
+boomstickcalc.localizedDescription = "瞄准眉心！§r\n§f火枪造成的近战与远程伤害必定为暴击";
+
+
+boomstickcalc.calcCrit = function(thisTrait, tool, attacker, target) {
+  return true;
+};
+
+boomstickcalc.register();
+
+
+val gaokangya = TraitBuilder.create("gaokangya");
+gaokangya.color = 0xffaadd;
+gaokangya.localizedName = "高抗压";
+gaokangya.localizedDescription = "“岁月的沉积！”§r\n§f格挡后使敌人收到伤害增加一段时间";
+
+gaokangya.onBlock = function(trait, tool, player, event) {
+    if(isNull(event.damageSource.getTrueSource())) {
+        return;
+    } else{
+    var attacker as IEntityLivingBase = event.damageSource.getTrueSource();
+   attacker.addPotionEffect(<potion:potioncore:vulnerable>.makePotionEffect(100, 0, false, false));
+   }
+};
+gaokangya.onPlayerHurt = function(trait, tool, player, attacker,event) {
+    if(ishield(player)){
+   attacker.addPotionEffect(<potion:potioncore:vulnerable>.makePotionEffect(100, 0, false, false));
+    }
+};
+
+gaokangya.register();
+
+val alteration = TraitBuilder.create("alteration");
+alteration.color = 0xffaadd;
+alteration.localizedName = "蚀变";
+alteration.localizedDescription = "小心划伤§r\n§f增加暴击伤害，非暴击的攻击会逐渐削弱敌人的护甲并对相同敌人有逐渐提高的概率来将本次攻击变为暴击";
+
+alteration.calcCrit = function(thisTrait, tool, attacker, target) {
+    var player as IPlayer = attacker; 
+    if (!player.world.remote) {  
+        if (player.isPotionActive(<potion:potioncore:broken_armor>)) {
+                var resistanceLevel as int = player.getActivePotionEffect(<potion:potioncore:broken_armor>).amplifier as int ;
+                var numberadd   = resistanceLevel*5;
+                 var rand = Math.random()*100;
+                 if (rand < numberadd){
+                 return true;
+                 }else{return false;}
+            }else{return false;}
+            }else{return false;}
+};
+
+alteration.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    if(isCritical){
+return (3.0f + newDamage)as float;
+    }else{
+        if (!attacker.world.remote) { 
+        if (target.isPotionActive(<potion:potioncore:broken_armor>)) {
+                var resistanceLevel as int = target.getActivePotionEffect(<potion:potioncore:broken_armor>).amplifier as int ;
+                  target.removePotionEffect(<potion:potioncore:broken_armor>);
+                    target.addPotionEffect(<potion:potioncore:broken_armor>.makePotionEffect(600, (resistanceLevel+3), false, false));
+            }else{
+target.addPotionEffect(<potion:potioncore:broken_armor>.makePotionEffect(600, 2, false, false));
+    }}return newDamage;}
+};
+
+
+alteration.register();
+
+val ichor = TraitBuilder.create("ichor");
+ichor.color = 0xffaadd;
+ichor.localizedName = "觉醒之灵";
+ichor.localizedDescription = "“核心崩解！”§r\n§f玩家造成伤害后将对一定范围内的生物追加一段等同于造成伤害一定比例的魔法伤害，同时攻击后会为玩家提供一部分临时生命";
+
+ichor.calcDamage = function(trait, tool, attacker, target, originalDamage, newDamage, isCritical){
+    var player as IPlayer =attacker;
+    var poos as IEntity =target;
+    var playerr as EntityPlayer  =player.native;
+    var world as IWorld  =player.world;
+    var absorption as float = playerr.getAbsorptionAmount();
+    if (absorption < 20) {
+        playerr.setAbsorptionAmount(absorption + 1.0f);
+    }
+    var pos as IBlockPos = IBlockPos.create(poos.x, poos.y, poos.z);
+                var s = pos.getOffset(IFacing.up(), 2).getOffset(IFacing.west(), 5).getOffset(IFacing.north(), 5) as IBlockPos;
+                var e = pos.getOffset(IFacing.down(), 2).getOffset(IFacing.east(), 5).getOffset(IFacing.south(), 5) as IBlockPos;
+                var entities = world.getEntitiesInArea(s.asPosition3f(), e.asPosition3f()) as IEntity[];
+                for entity in entities {
+                     var data as IData = world.getBlock(pos).data;
+                    if((entity instanceof IEntityLivingBase)&& !(entity instanceof IPlayer)){
+                        var living as IEntityLivingBase = entity;
+                            living.attackEntityFrom(IDamageSource.MAGIC() ,  newDamage * 0.7f);     
+                    }
+                }
+
+/* 
+    for entity in getEntityLivingBaseInSector(attacker, 5.0d ,5.0d){
+        if(!entity instanceof IPlayer){
+            entity.attackEntityFrom(IDamageSource.createPlayerDamage(player) , newDamage * 0.7f);
+        var damage as IDamageSource =IDamageSource.createPlayerDamage(player);
+        var madamge as IDamageSource = damage.setMagicDamage();
+            entity.attackEntityFrom(madamge , newDamage * 0.7f);
+        }
+    }*/
+    return newDamage; 
+};
+
+ichor.register();
