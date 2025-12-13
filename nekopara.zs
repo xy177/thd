@@ -228,5 +228,4 @@ mods.thermalexpansion.Insolator.addRecipe( <minecraft:poisonous_potato>*2, <addi
 //离心机
 mods.thermalexpansion.Centrifuge.removeRecipe(<thermalfoundation:material:98>);
 
-mods.thermalexpansion.Compactor.addStorageRecipe(<contenttweaker:material_part:614>, <tconstruct:clear_glass>, 15000);
 

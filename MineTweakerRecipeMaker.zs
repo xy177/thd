@@ -282,6 +282,7 @@ recipes.addShapeless(<thaumcraft:salis_mundus>, [<thaumcraft:crystal_essence>, <
 
 // ================================================================================
 //#MARKER ADD SHAPED
+recipes.addShaped(<contenttweaker:material_part:614>, [[null, <minecraft:piston>], [null, <tconstruct:clear_glass>], [<minecraft:glass_bottle>, <deeperdepths:lightning_rod>]]);
 recipes.addShaped(<moretcon:blockreforgestation>, [[<ore:blockNetherite>, <nb:respawn_anchor>, <ore:blockNetherite>], [<nb:black_stone>, <tconstruct:tooltables:3>, <nb:black_stone>], [<nb:black_stone>, null, <nb:black_stone>]]);
 recipes.addShaped(<additions:fxt-slowbullet>, [[<ore:ingotNetherite>, <futuremc:chain>, <ore:ingotNetherite>], [<ore:ingotNetherite>, <actuallyadditions:item_misc:19>, <ore:ingotNetherite>], [<minecraft:planks:5>, <minecraft:planks:5>, <minecraft:planks:5>]]);
 recipes.addShaped(<additions:fxt-autobullet>, [[<minecraft:gold_ingot>, <futuremc:chain>, <minecraft:gold_ingot>], [<minecraft:gold_ingot>, <minecraft:tripwire_hook>, <minecraft:gold_ingot>], [<tconstruct:seared:3>, <tconstruct:seared:3>, <tconstruct:seared:3>]]);
