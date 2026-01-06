@@ -19,24 +19,6 @@ Infusion.registerRecipe("metall","",<tconevo:metal:20>,5,
 <additions:fxt-fan_xing>,
 [<thaumicwonders:primordial_grain>,<avaritiaitem:fatum>,<thaumcraft:salis_mundus>]);
 
-val additions as IItemStack[]=[
-<additions:fxt-tz>,
-<additions:fxt-xy>,
-<additions:fxt-fantastic_feather>,
-<additions:fxt-auric>,
-<additions:fxt-bx_ingot>
-];
-
-Infusion.registerRecipe("tz","",additions[0],5,
-[<aspect:draco>*150,<aspect:coralos>*150,<aspect:dreadia>*150,<aspect:vitium>*300,<aspect:tenebrae>*300,<aspect:herba>*377],
-<taiga:nihilite_ingot>,
-[<tconevo:metal:5>,
-<thaumicaugmentation:material:3>,
-<tconevo:metal:20>,
-<thaumadditions:mithminite_ingot>,
-<thaumadditions:mithrillium_ingot>,
-<thaumadditions:adaminite_ingot>
-]);
 
 Infusion.registerRecipe("tz","",<additions:fxt-tz>,20,
 [<aspect:draco>*150,<aspect:coralos>*150,<aspect:dreadia>*150,<aspect:vitium>*300,<aspect:tenebrae>*300,<aspect:herba>*377],

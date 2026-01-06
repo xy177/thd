@@ -510,3 +510,11 @@ for item in bullet {
     <ore:Ticbullet>.add(item);
     
 }
+<ore:anynotusefood>.addAll(<ore:listAllveggie>);
+<ore:anynotusefood>.addAll(<ore:listAllfruit>);
+<ore:anynotusefood>.addAll(<ore:listAllwater>);
+<ore:anynotusefood>.addAll(<ore:ice>);
+<ore:notmeat>.addAll(<ore:listAllfruit>);
+<ore:notmeat>.addAll(<ore:listAllveggie>);
+<ore:bigmeat>.add(<croparia:roast_porc>);
+<ore:bigmeat>.add(<croparia:roast_beef>);

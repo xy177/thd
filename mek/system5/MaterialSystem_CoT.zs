@@ -1,5 +1,6 @@
 #loader contenttweaker
 #priority 101
+#ikwid
 import mods.contenttweaker.MaterialBuilder;
 import mods.contenttweaker.MaterialSystem;
 import mods.contenttweaker.Material;

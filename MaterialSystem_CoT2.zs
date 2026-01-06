@@ -1,5 +1,6 @@
 #loader contenttweaker
 #priority 101
+#ikwid
 import mods.contenttweaker.MaterialBuilder;
 import mods.contenttweaker.MaterialSystem;
 import mods.contenttweaker.Material;
@@ -167,7 +168,7 @@ val Sptchestc = MaterialSystem.getPartBuilder()
 .build();
 
 
-function mekaddMaterial(name as string , Color as string , Part as string[]) {
+function mekaddMaterial2(name as string , Color as string , Part as string[]) {
     MaterialSystem.getMaterialBuilder().setName(name).setColor(Color).build().registerParts(Part);
 }
 
@@ -175,15 +176,15 @@ function mekaddMaterial(name as string , Color as string , Part as string[]) {
 //当你的游戏里有  深渊国度（AbyssalCraft）mod时会创建一套渊素的mek5倍矿
 //没有时只会生成一些没有合成的物品而已
 val Part1 as string[]=["sptdust", "sptcrystal", "sptshard","sptclump","sptdirty_dust","tingredients","traw", "sptlate", "twire","sptblock","sptseed","sptotato","tplantsilt","tsilt","tflocculent","sptchesta","sptchestb","sptchestc","clean_ore_slurry_gast","dirty_ore_slurry_gast"];
-mekaddMaterial("Iron", 0xe9c8b1, Part1);
-mekaddMaterial("Gold", 0xfcaf17, Part1);
-mekaddMaterial("Lapis", 0x1b315e, Part1);
-mekaddMaterial("Redstone", 0xaa2116, Part1);
-mekaddMaterial("Quartz", 0xf2eada, Part1);
-mekaddMaterial("Copper", 0xb4533c, Part1);
-mekaddMaterial("Tin", 0x5e7c85, Part1);
-mekaddMaterial("Lead", 0x3c3645, Part1);
-mekaddMaterial("Silver", 0xd3d7d4, Part1);
-mekaddMaterial("Nickel", 0xdbce8f, Part1);
-mekaddMaterial("Diamond", 0x50b7c1, Part1);
-mekaddMaterial("Emerald", 0x45b97c, Part1);
+mekaddMaterial2("Iron", 0xe9c8b1, Part1);
+mekaddMaterial2("Gold", 0xfcaf17, Part1);
+mekaddMaterial2("Lapis", 0x1b315e, Part1);
+mekaddMaterial2("Redstone", 0xaa2116, Part1);
+mekaddMaterial2("Quartz", 0xf2eada, Part1);
+mekaddMaterial2("Copper", 0xb4533c, Part1);
+mekaddMaterial2("Tin", 0x5e7c85, Part1);
+mekaddMaterial2("Lead", 0x3c3645, Part1);
+mekaddMaterial2("Silver", 0xd3d7d4, Part1);
+mekaddMaterial2("Nickel", 0xdbce8f, Part1);
+mekaddMaterial2("Diamond", 0x50b7c1, Part1);
+mekaddMaterial2("Emerald", 0x45b97c, Part1);

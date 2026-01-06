@@ -198,10 +198,10 @@ recipes.addShaped(<star_rains_toybox:quanzhang>, [[<twilightforest:zombie_scepte
 recipes.addShaped(<star_rains_toybox:quanzhang>, [[<twilightforest:lifedrain_scepter>]]);
 recipes.addShaped(<star_rains_toybox:quanzhang>, [[<twilightforest:shield_scepter>]]);
 recipes.addShaped(<additions:fxt-moonyellow>, [[null, <twilightforest:torchberries>, null], [<minecraft:glowstone_dust>, <minecraft:coal_block>, <twilightforest:raven_feather>], [null, <minecraft:blaze_powder>, null]]);
-recipes.addShaped(<text:ganzangshelder>, [[<minecraft:diamond_block>, <minecraft:pufferfish>, <minecraft:diamond_block>], [<minecraft:pufferfish>, <minecraft:emerald_block>, <minecraft:pufferfish>], [<minecraft:diamond_block>, <minecraft:pufferfish>, <minecraft:diamond_block>]]);
 recipes.addShaped(<text:ganzangshelder>, [[<minecraft:diamond_block>, <minecraft:fish:3>, <minecraft:diamond_block>], [<minecraft:fish:3>, <minecraft:emerald_block>, <minecraft:fish:3>], [<minecraft:diamond_block>, <minecraft:fish:3>, <minecraft:diamond_block>]]);
-recipes.addShaped(<minecraft:pufferfish>, [[<minecraft:fish:3>]]);
-recipes.addShaped(<minecraft:fish:3>, [[<minecraft:pufferfish>]]);
+recipes.addShaped(<text:ganzangshelder>, [[<minecraft:diamond_block>, <minecraft:fish:3>, <minecraft:diamond_block>], [<minecraft:fish:3>, <minecraft:emerald_block>, <minecraft:fish:3>], [<minecraft:diamond_block>, <minecraft:fish:3>, <minecraft:diamond_block>]]);
+recipes.addShaped(<minecraft:fish:3>, [[<minecraft:fish:3>]]);
+recipes.addShaped(<minecraft:fish:3>, [[<minecraft:fish:3>]]);
 recipes.addShaped(<text:twilight_gem>, [[null, <twilightforest:magic_map_focus>, null], [<ore:ingotSteeleaf>, <ore:gemDiamond>, <twilightforest:naga_scale>], [null, <ore:ingotKnightmetal>, null]]);
 recipes.addShaped(<additions:fxt-sanite_ignot> * 9, [[<additions:fxt-sanite_block>]]);
 recipes.addShaped(<additions:fxt-sanite_block>, [[<additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>], [<additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>], [<additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>, <additions:fxt-sanite_ignot>]]);
@@ -223,14 +223,8 @@ recipes.addShaped(<twilightforest:armor_shard> * 24, [[null, <mysticalagricultur
 recipes.addShaped(<thaumicwonders:primordial_grain>, [[<thaumcraft:primordial_pearl>.anyDamage().transformDamage(1)]]);
 recipes.addShaped(<additions:fxt-ice_blood>, [[<iceandfire:ice_dragon_blood>], [<botania:manaresource>]]);
 recipes.addShaped(<additions:fxt-blood_fire>, [[<iceandfire:fire_dragon_blood>], [<botania:manaresource>]]);
-recipes.addShaped(<minecraft:pufferfish>, [[<minecraft:fish:3>]]);
-recipes.addShaped(<minecraft:clownfish>, [[<minecraft:fish:2>]]);
-recipes.addShaped(<minecraft:salmon>, [[<minecraft:fish:1>]]);
-recipes.addShaped(<minecraft:cod>, [[<minecraft:fish>]]);
 recipes.addShaped(<additions:fxt-astsxbg> * 64, [[<text:xadahgla>]]);
 recipes.addShaped(<aquaculture:fish:38>, [[<harvestcraft:cuttingboarditem>.reuse(), <ore:listAllfishraw>]]);
-recipes.addShaped(<minecraft:cod>, [[<minecraft:fish>]]);
-recipes.addShaped(<minecraft:fish>, [[<minecraft:cod>]]);
 recipes.addShaped(<botania:manaresource:5>, [[<croparia:gaia_spirit>]]);
 recipes.addShaped(<text:dj_03>, [[<minecraft:noteblock>, <avaritia:resource:7>]]);
 recipes.addShaped(<text:dj_01>, [[<avaritia:resource:7>, <minecraft:noteblock>]]);

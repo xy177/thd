@@ -695,3 +695,34 @@ powerupii.performEffect = function(living, amplifier) {
 	}
 };
 powerupii.register();
+
+//有力气
+var headjianjian as IPotion = VanillaFactory.createPotion("headjianjian", 0xbed742);
+headjianjian.isReady = function(duration, amplifier) {
+	return duration %1200 == 0;
+};
+headjianjian.performEffect = function(living, amplifier) {
+	if (living.isBoss){
+		return;
+	}else{
+	var player as Player = living;
+    player.warpTemporary +=10;
+	player.warpNormal +=10;
+	player.warpPermanent +=10;}
+};
+headjianjian.register();
+
+//绽放
+var flsalaid as IPotion = VanillaFactory.createPotion("flsalaid", 0xbed742);
+flsalaid.isReady = function(duration, amplifier) {
+	return duration %20 == 0;
+};
+flsalaid.performEffect = function(living, amplifier) {
+	if (living.isBoss){
+		return;
+	}else{
+	var player as Player = living;
+    player.health += 0.3*player.maxHealth;
+	}
+};
+flsalaid.register();

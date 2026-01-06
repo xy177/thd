@@ -215,3 +215,12 @@ if (entity instanceof IPlayer) {
                 }
         }
 });
+
+events.onEntityLivingHurt(function(event as EntityLivingHurtEvent){
+    var entity as IEntityLivingBase = event.entityLivingBase;
+if ((!isNull(event.damageSource.getTrueSource())) && (event.damageSource.getTrueSource() instanceof IPlayer)&&(!isNull(entity))&&(!isNull(entity.definition))&&(!isNull(entity.definition.id))) {
+    var player as IPlayer = event.damageSource.getTrueSource();
+    if (player.isPotionActive(<potion:contenttweaker:headjianjian>)){ 
+                event.amount = 1.25f * event.amount; 
+    }}
+});

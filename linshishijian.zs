@@ -91,7 +91,7 @@ function send4(p as IPlayer,s as string[]){
         p.sendRichTextMessage(format.aqua(i));
     }
 }
-
+/* 
 events.onCriticalHit(function(event as CriticalHitEvent){
 if (!event.player.world.remote) { 
     event.damageModifier = event.oldDamageModifier* 1.0f;
@@ -99,7 +99,7 @@ if (!event.player.world.remote) {
      event.allow();
 }
 }
-); 
+); */
 
 
 
@@ -147,20 +147,3 @@ server.commandManager.executeCommand(player,"gamestage info");
 
 }}}
 );
-
-events.onPlayerTick(function(event as crafttweaker.event.PlayerTickEvent) {
-     var player as IPlayer = event.player;
-     if ((!event.player.world.remote)&&(player.hasGameStage("nutritagain"))) {
-      var nutritmin =min(player.getNutrition("energy"),min(player.getNutrition("fruitable"),min(player.getNutrition("proteinairy"),min(player.getNutrition("sugarain"),player.getNutrition("abundant")))));
-      if (nutritmin<=25) {
-        player.setNutrition("energy",90.0f);
-        player.setNutrition("fruitable",90.0f);
-        player.setNutrition("proteinairy",90.0f);
-        player.setNutrition("sugarain",90.0f);
-        player.setNutrition("abundant",90.0f);
-    player.removeGameStage("nutritagain");
-send(player,["Belphegor淡忘了你灵魂的味道，并渴望着你再次允许TA浅尝其味道的那一天"]);
-send2(player,["你的个体状态（营养值）已恢复到健康水平！"]);
-      }
-          }
-});

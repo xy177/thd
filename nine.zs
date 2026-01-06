@@ -22,6 +22,7 @@ events.onEntityLivingUseItemFinish(function(event as Finish){
 //display name
 game.setLocalization("zh_cn","item.material.name","山铜锭");
 <harvestcraft:grinder>.displayName = "研磨机";
+<exsartagine:kettle>.displayName = "厨锅";
 game.setLocalization("zh_cn","tile.blockorichalcos.name","山铜块");
 <akashictome:tome>.displayName = "阿卡什宝典";
 <rustic:crop_stake>.displayName = "木桩";
@@ -118,6 +119,9 @@ game.setLocalization("zh_cn","item.javelin.name","三叉戟");
 <jmilpol:pendant>.removeTooltipLine(1 as int);
 <jmilpol:everlasting_pendant>.addTooltip("携带时赋予你死亡不掉落的能力，在物品栏中时也会生效");
 <jmilpol:pendant>.addTooltip("死亡后消耗自身保留你的物品，在物品栏中时也会生效");
+
+
+<contenttweaker:material_part:617>.addTooltip("自身碳水值大于80时可右键注射，使用后降低自身碳水值但是会获得虚弱效果");
 
 /*
 //电转魔

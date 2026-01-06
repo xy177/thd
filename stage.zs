@@ -78,6 +78,46 @@ function send4(p as IPlayer,s as string[]){
     }
 }
 
+//针剂
+events.onPlayerRightClickItem(function(event as crafttweaker.event.PlayerRightClickItemEvent){ 
+    if (!event.player.world.remote) {
+var item  as IItemStack = event.item;
+var player as IPlayer = event.player;
+var p = event.player.position; 
+    var w = event.player.world;
+var mainItem as IItemStack = player.mainHandHeldItem;
+if(!isNull(mainItem)){
+var itema = player.mainHandHeldItem.definition.id;
+var itemb = player.mainHandHeldItem.metadata;
+var sugar  = player.getNutrition("sugarain");
+if( ((player.mainHandHeldItem.definition.ores ) has <ore:zhenjiYidaosuu>) &&(itemb == 617 ) &&(!isNull(player.mainHandHeldItem.definition.ores))&&(mainItem.amount >= 1)&&(sugar >= 80.0f ) ){
+   
+    mainItem.mutable().withAmount(mainItem.amount - 1);
+    player.setNutrition("sugarain",(sugar - 5.0f ));
+    player.addPotionEffect(<potion:minecraft:weakness>.makePotionEffect(3600, 2, false, false));}
+}}}
+);
+
+events.onPlayerRightClickItem(function(event as crafttweaker.event.PlayerRightClickItemEvent){ 
+    if (!event.player.world.remote) {
+var item  as IItemStack = event.item;
+var player as IPlayer = event.player;
+var p = event.player.position; 
+    var w = event.player.world;
+var mainItem as IItemStack = player.mainHandHeldItem;
+if(!isNull(mainItem)){
+var itema = player.mainHandHeldItem.definition.id;
+var itemb = player.mainHandHeldItem.metadata;
+if( ((player.mainHandHeldItem.definition.ores ) has <ore:zhenjiQbdragon>) &&(itemb == 616 ) &&!isNull(player.mainHandHeldItem.definition.ores)&&(mainItem.amount >= 1)){
+    mainItem.mutable().withAmount(mainItem.amount - 1);
+    player.addPotionEffect(<potion:contenttweaker:headjianjian>.makePotionEffect(3600, 0, false, false));
+    player.warpNormal =player.warpNormal + 45;
+    player.warpTemporary =player.warpTemporary +30;
+    player.warpPermanent =player.warpPermanent +25;
+}}}}
+);
+ 
+//阶段
 events.onPlayerWakeUp(function(event as crafttweaker.event.PlayerWakeUpEvent)
 {
     if (event.player.world.remote)return;
@@ -645,6 +685,24 @@ send2(player,["Belphegor浅尝并记住了你灵魂的味道"]);
 
 }}}
 );
+
+
+events.onPlayerTick(function(event as crafttweaker.event.PlayerTickEvent) {
+     var player as IPlayer = event.player;
+     if ((!event.player.world.remote)&&(player.hasGameStage("nutritagain"))) {
+      var nutritmin =min(player.getNutrition("energy"),min(player.getNutrition("fruitable"),min(player.getNutrition("proteinairy"),min(player.getNutrition("sugarain"),player.getNutrition("abundant")))));
+      if (nutritmin<=25) {
+        player.setNutrition("energy",90.0f);
+        player.setNutrition("fruitable",90.0f);
+        player.setNutrition("proteinairy",90.0f);
+        player.setNutrition("sugarain",90.0f);
+        player.setNutrition("abundant",90.0f);
+    player.removeGameStage("nutritagain");
+send(player,["Belphegor淡忘了你灵魂的味道，并渴望着你再次允许TA浅尝其味道的那一天"]);
+send2(player,["你的个体状态（营养值）已恢复到健康水平！"]);
+      }
+          }
+});
 
 events.onItemToss (function (event as crafttweaker.event.ItemTossEvent) { 
  var i = event.item.item.commandString;
