@@ -1,0 +1,2106 @@
+#loader contenttweaker
+#loader crafttweaker reloadableevents
+#modloaded tconstruct
+#modloaded conarm
+
+#priority 100
+
+import mods.contenttweaker.conarm.ArmorTraitBuilder;
+import mods.manatweaks.ManaHandler;
+
+import crafttweaker.player.IPlayer;
+import crafttweaker.block.IBlock;
+import crafttweaker.entity.IEntity;
+import crafttweaker.entity.IEntityLivingBase;
+import crafttweaker.world.IWorld;
+import mods.ctutils.utils.Math;
+import crafttweaker.player.IFoodStats;
+import crafttweaker.damage.IDamageSource;
+import crafttweaker.event.EntityLivingHurtEvent;
+import mods.ctintegration.scalinghealth.DifficultyManager;
+import mods.BXLib;
+import crafttweaker.event.EntityLivingUseItemEvent.Finish;
+import crafttweaker.world.IFacing;
+import crafttweaker.block.IBlockDefinition;
+import crafttweaker.block.IBlockState;
+import crafttweaker.util.IRandom;
+import crafttweaker.event.IEventPositionable;
+import crafttweaker.event.IBlockEvent;
+import crafttweaker.event.BlockBreakEvent;
+import crafttweaker.world.IBlockPos;
+import crafttweaker.item.IItemStack;
+import mods.contenttweaker.Color;
+import crafttweaker.data.IData;
+import mods.zenutils.DataUpdateOperation.OVERWRITE;
+import mods.zenutils.DataUpdateOperation.APPEND;
+import mods.zenutils.DataUpdateOperation.MERGE;
+import mods.zenutils.DataUpdateOperation.REMOVE;
+import mods.zenutils.DataUpdateOperation.BUMP;
+
+
+/*
+    本代码文件中“扭曲拥护”的属性源自大轩整合包，根据CC:BY-NC-ND 协议使用
+ */
+/*
+    本代码文件中“钢守凭依”等属性根据CC:BY-NC-ND 协议参考唐轩宇于mc百科的教程“cot为匠魂添加稍微复杂一点的特性事例”进行编写
+ */
+ //给雨飞的留言：1.6的新词条我用了一大坨的自定义药水效果（虽然大部分是空效果）这个药水的文件是geininxiayaole，你到时候去那边找就行
+function health(player as IPlayer){
+    server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:instant_health 1 0");
+}
+
+
+
+val awarpsTrait = ArmorTraitBuilder.create("awarps");
+awarpsTrait.color = 0xffaadd;
+awarpsTrait.localizedName = "理御";
+awarpsTrait.localizedDescription = "不可理喻?可以理御。§r\n§f当你的扭曲较低时为你提供伤害减免";
+awarpsTrait.canApplyTogetherTrait = function(thisTrait, otherTrait) {
+    return otherTrait != "body";};
+awarpsTrait.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if (!isNull(player)){
+        var warp as int = 0;
+        var player as IPlayer = player;
+        warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+        if(warp >100){
+            return (((0.1 * (warp as float /100.0f))+1) * newDamage) as float;
+        }
+        else{
+            return (0.8f * newDamage) as float;
+        }
+    }
+    return newDamage;
+};
+awarpsTrait.register();
+
+val amaocongTrait = ArmorTraitBuilder.create("maocong");
+amaocongTrait.color = 0xffaadd;
+amaocongTrait.localizedName = "毛丛";
+amaocongTrait.localizedDescription = "毛茸茸的让人安心§r\n§f使玩家获得温暖并降低所受到的弹射物伤害";
+amaocongTrait.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(source.isProjectile()){
+         return 0.5f * newDamage;
+    }
+    return newDamage;
+};
+amaocongTrait.onArmorTick = function(trait, armor, world, player){
+     if (!player.isPotionActive(<potion:contenttweaker:warma>)){
+    player.addPotionEffect(<potion:contenttweaker:warma>.makePotionEffect(30, 0, false, false)); 
+    }
+};
+amaocongTrait.register();
+
+val azhuangyan = ArmorTraitBuilder.create("azhuangyan");
+azhuangyan.color = 0xffaadd;
+azhuangyan.localizedName = "庄严";
+azhuangyan.localizedDescription = "神圣不可侵犯§r\n§f你受到的弹射物与魔法伤害后会治疗你";
+azhuangyan.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(source.isProjectile() || source.isMagicDamage()){
+        player.health +=2;
+    }
+    if(source.isExplosion()){
+        return 0.5f * newDamage;
+    }
+    return newDamage;
+};
+azhuangyan.register();
+
+val agaoshang = ArmorTraitBuilder.create("agaoshang");
+agaoshang.color = 0xffaadd;
+agaoshang.localizedName = "高尚";
+agaoshang.localizedDescription = "富丽堂皇§r\n§f你受击后会回复饱食度和饱和度";
+agaoshang.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(player)) return damage;
+    if(isNull(source.getTrueSource())) return damage;
+    player.foodStats.addStats(5,5.0);
+    player.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(5, 0, false, false));
+    return damage;
+};
+agaoshang.register();
+
+
+val adihuang = ArmorTraitBuilder.create("adihuang");
+adihuang.color = 0xffaadd;
+adihuang.localizedName = "帝皇";
+adihuang.localizedDescription = "杂交效果§r\n§f同时具有庄严和高尚的效果";
+agaoshang.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(player)) return damage;
+    if(isNull(source.getTrueSource())) return damage;
+    player.foodStats.addStats(5,5.0);
+    player.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(5, 0, false, false));
+    if(source.isProjectile() || source.isMagicDamage()){
+        player.health +=2;
+    }
+    if(source.isExplosion()){
+        return 0.5f * newDamage as float;
+    }
+    return newDamage;
+};
+adihuang.register();
+
+val aplague = ArmorTraitBuilder.create("aplague");
+aplague.color = 0xffaadd;
+aplague.localizedName = "疫染驱散";
+aplague.localizedDescription = "在你受伤时治好你的疫病，还有别的什么§r\n§f在受伤时清除你身上的药水效果";
+aplague.onArmorTick = function(trait, armor, world, player){
+      if(player.isPotionActive(<potion:abyssalcraft:cplague>)||player.isPotionActive(<potion:abyssalcraft:dplague>)){
+        player.removePotionEffect(<potion:abyssalcraft:cplague>);
+        player.removePotionEffect(<potion:abyssalcraft:dplague>);
+      }
+};
+aplague.register();
+
+val asleep = ArmorTraitBuilder.create("asleep");
+asleep.color = 0xffaadd;
+asleep.localizedName = "睡神";
+asleep.localizedDescription = "嗯？我在听讲§r\n§f受到boss伤害降低";
+asleep.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var dam as float = newDamage;
+    if(source.isExplosion()){
+        health(player);
+    }
+    if(source.trueSource.isBoss){
+        return (newDamage * 0.6f) as float;
+    }
+    return newDamage;
+};
+asleep.register();
+
+/*val astar = ArmorTraitBuilder.create("astar");
+astar.color = 0xffaadd;
+astar.localizedName = "星之雨";
+astar.localizedDescription = "星落,雨下§r\n§f受到boss伤害略微降低，持续给予玩家饱和效果";
+astar.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    var world as IWorld = player.world;
+    if(!world.isDayTime()){
+        if(source.trueSource.isBoss){
+            return 0.75f * newDamage as float;
+        }
+    }
+    return newDamage;
+};
+astar.onAbility= function(trait, level, world, player) {
+    server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:saturation 1 1");
+};
+astar.register();*/
+
+/*val aff = ArmorTraitBuilder.create("aff");
+aff.color = 0xffaadd;
+aff.localizedName = "FF";
+aff.localizedDescription = "你永远无法瞄准一位巨龙猎手§r\n§f受到弹射物伤害后治疗玩家，受到boss伤害大幅度降低";
+aff.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    var world as IWorld = player.world;
+    if(source.isProjectile()){
+        health(player);
+    }
+    if(world.isDayTime()){
+        if(source.trueSource.isBoss){
+            health(player);
+            return 0.55f * newDamage as float;
+        }
+    }
+    return newDamage;
+};
+aff.register();
+*/
+val ahead = ArmorTraitBuilder.create("ahead");
+ahead.color = 0xffaadd;
+ahead.localizedName = "犽戎之吼";
+ahead.localizedDescription = "你周围的空气变得灼热起来§r\n§f在血量低于一半时赋予玩家各种效果";
+ahead.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(player.health <( player.maxHealth as float * 0.5f)){
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:strength 10 0");
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:regeneration 10 0");
+    }
+    if(source.trueSource.isBoss){
+        return 0.65f * newDamage;
+    }
+    return newDamage;
+};
+ahead.register();
+
+val abx = ArmorTraitBuilder.create("abx");
+abx.color = 0xffaadd;
+abx.localizedName = "大轩の速度";
+abx.localizedDescription = "根本停不下来§r\n§f你感觉越来越快了起来";
+abx.onHurt =function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:speed 3 2");
+    return newDamage;
+};
+abx.register();
+
+val hearti = ArmorTraitBuilder.create("hearti");
+hearti.color = 0xd71345;
+hearti.localizedName = "红心容器";
+hearti.localizedDescription = "保持你的决心！§r\n§f来自初代匠魂的额外血量上限(多个部位不叠加)";
+hearti.addItem(<item:text:red_heart_canister>,10,1);
+hearti.onAbility= function(trait, level, world, player) {
+     BXLib.addPlayerAdditionsHealth(player,"hearti",20);
+};
+
+hearti.onArmorRemove = function(trait, armor, player, index) {
+     BXLib.addPlayerAdditionsHealth(player,"hearti",0);
+};
+hearti.register();
+
+val yellowheart = ArmorTraitBuilder.create("yellowheart");
+yellowheart.color = 0xffe600;
+yellowheart.localizedName = "黄心容器";
+yellowheart.localizedDescription = "理论上我能射出子弹，但实际上没啥理论可言§r\n§f来自初代匠魂的额外血量上限(多个部位不叠加)";
+yellowheart.onAbility= function(trait, level, world, player) {
+     BXLib.addPlayerAdditionsHealth(player,"yellowheart",20);
+};
+
+yellowheart.onArmorRemove = function(trait, armor, player, index) {
+     BXLib.addPlayerAdditionsHealth(player,"yellowheart",0);
+};
+yellowheart.register();
+
+val greenheart = ArmorTraitBuilder.create("greenheart");
+greenheart.color = 0x1d953f;
+greenheart.localizedName = "绿心容器";
+greenheart.localizedDescription = "保持你的...仁慈？§r\n§f来自初代匠魂的额外血量上限(多个部位不叠加)";
+greenheart.onAbility= function(trait, level, world, player) {
+     BXLib.addPlayerAdditionsHealth(player,"greenheart",20);
+};
+
+greenheart.onArmorRemove = function(trait, armor, player, index) {
+     BXLib.addPlayerAdditionsHealth(player,"greenheart",0);
+};
+greenheart.register();
+
+val cloud = ArmorTraitBuilder.create("cloud");
+cloud.color = 0xffaadd;
+cloud.localizedName = "光中云雾";
+cloud.localizedDescription = "烟中恶鬼§r\n§f当你正在光合作用时你有概率闪避任何伤害";
+cloud.onAbility= function(trait, level, world, player) {
+     if (player.isPotionActive(<potion:teastory:photosynthesis>)){
+         player.addPotionEffect(<potion:teastory:agility>.makePotionEffect(40, 2, false, false));
+    }
+};
+cloud.register();
+
+val enterity = ArmorTraitBuilder.create("enterity");
+enterity.color = 0xffaadd;
+enterity.localizedName = "静籁永恒";
+enterity.localizedDescription = "皮糙肉厚§r\n§f当你生命垂危时，被攻击时概率获得反射，进而概率获得刹那永恒";
+enterity.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    var mite as double = Math.random();
+    if (mite < 0.7) {
+        player.addPotionEffect(<potion:potioncore:recoil>.makePotionEffect(40, 0, false, false));
+    }
+    if(mite < 0.6){
+    if(player.health <( player.maxHealth as float * 0.15f)){
+        if (player.isPotionActive(<potion:potioncore:recoil>)){
+            player.addPotionEffect(<potion:extrabotany:eternity>.makePotionEffect(40, 0, false, false));
+              }
+          }
+    }return newDamage;
+};
+enterity.register();
+
+val cure = ArmorTraitBuilder.create("cure");
+cure.color = 0xffaadd;
+cure.localizedName = "昴星团的原则";
+cure.localizedDescription = "片尘不沾！§r\n§f持续清除身上的所有负面效果";
+cure.onAbility= function(trait, level, world, player) {
+     if (!player.isPotionActive(<potion:potioncore:cure>)){
+         player.addPotionEffect(<potion:potioncore:cure>.makePotionEffect(40, 0, false, false));
+    }
+};
+cure.register();
+
+val protect = ArmorTraitBuilder.create("protect");
+protect.color = 0xf3d261;
+protect.localizedName = "护佑";
+protect.localizedDescription = "坚硬，守护，装甲...woc，漏过去了！§r\n§f根据剩余生命值的不同减免不同百分比的全部伤害";
+protect.addItem(<item:text:creeperr>);
+protect.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(player.health <( player.maxHealth as float * 0.5f)){
+        return 0.5f * newDamage;
+    }
+    if(player.health >=( player.maxHealth as float * 0.5f)){
+        return 0.85f * newDamage;
+    }
+    return newDamage;
+};
+protect.register();
+
+val enhancea = ArmorTraitBuilder.create("enhancea");
+enhancea.color = 0xf3d261;
+enhancea.localizedName = "光彩照人";
+enhancea.localizedDescription = "来自未来的它如此炫目！§r\n§f玫瑰金极佳地容纳了更多的强化槽！\n§f虽然本该如此，但是现在强化槽是由其他词条提供... ";
+
+enhancea.register();
+
+val njj = ArmorTraitBuilder.create("njj");
+njj.color = 0xffaadd;
+njj.localizedName = "朴实无华";
+njj.localizedDescription = "纳米基岩，小子§r\n§f降低平时受到的伤害，但是受到来自boss的伤害略微增加";
+njj.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    var dam as float = newDamage;
+    if(source.isExplosion()){
+        health(player);
+    }
+    if(source.trueSource.isBoss){
+        return (newDamage * 1.25f) as float;
+    }
+    return (newDamage * 0.75f) as float;
+};
+njj.register();
+
+val chickens = ArmorTraitBuilder.create("chickens");
+chickens.color = 0xffaadd;
+chickens.localizedName = "美味烤鸡";
+chickens.localizedDescription = "好吃到掉渣！§r\n§f受击时概率获得烤鸡";
+chickens.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(Math.random() < 0.1){
+    if(isNull(player)) return damage;
+    if(isNull(source.getTrueSource())) return damage;
+    server.commandManager.executeCommand(server,"give "+player.name+" minecraft:cooked_chicken 0 1");
+    return damage;
+    }return newDamage;
+};
+chickens.register();
+
+val stonegrain = ArmorTraitBuilder.create("stonegrain");
+stonegrain.color = 0xf3d261;
+stonegrain.localizedName = "石粒";
+stonegrain.localizedDescription = "屹立不倒！§r\n§f在你即将死亡时，消耗经验来把你救回来";
+stonegrain.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(player.xp >50.0)
+    if (!player.isPotionActive(<potion:potioncore:revival>))
+    if(player.health <( player.maxHealth as float * 0.2f)){
+        server.commandManager.executeCommand(server,"effect "+player.name+" potioncore:revival 30 0");
+        player.executeCommand("xp -5L @p");
+    }
+    return newDamage;
+};
+stonegrain.register();
+
+val intelligenceee = ArmorTraitBuilder.create("intelligenceee");
+intelligenceee.color = 0xffaadd;
+intelligenceee.localizedName = "聪慧";
+intelligenceee.localizedDescription = "经验丰富§r\n§f随着时间推移，你会获得免费的经验等级";
+intelligenceee.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(armor.tag.lastTime)){//判断nbt是否为非空
+      val lastTime = armor.tag.lastTime;//获取上次触发时间
+      if(WorldTime - lastTime>11070){//判断与上次触发时间的距离
+        player.executeCommand("xp 1L @p");
+        armor.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间
+    }  
+};
+intelligenceee.register();
+
+val sanup = ArmorTraitBuilder.create("sanup");
+sanup.color = 0xfeeeed;
+sanup.localizedName = "理智";
+sanup.localizedDescription = "免费的应急理智顶液！§r\n§f持续给予玩家扭曲守护的效果";
+sanup.onArmorTick = function(trait, armor, world, player){
+     if (!player.isPotionActive(<potion:thaumcraft:warpward>)){
+    server.commandManager.executeCommand(server,"effect "+player.name+" thaumcraft:warpward 1 0");
+    }
+};
+sanup.register();
+
+val eightcooks = ArmorTraitBuilder.create("eightcooks");
+eightcooks.color = 0xf3d261;
+eightcooks.localizedName = "八大主厨！";
+eightcooks.localizedDescription = "不在其中，但述其事§r\n§f根据你饥饿值的不同为你提供不同程度的减伤或者回血";
+eightcooks.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+   val foodStats as IFoodStats = player.foodStats;
+    if(foodStats.foodLevel >=16){
+        return 0.63f * newDamage;
+    }
+    if(foodStats.foodLevel >=12){
+        return 0.85f * newDamage;
+    }
+    if(foodStats.foodLevel >=6){
+        player.health +=2;
+        return 1.35f * newDamage;
+    }
+    else{
+        player.health +=4; 
+        return 2.0f * newDamage;
+    }
+};
+eightcooks.register();
+
+val onewatter = ArmorTraitBuilder.create("onewatter");
+onewatter.color = 0xffaadd;
+onewatter.localizedName = "一水的滋润";
+onewatter.localizedDescription = "种田人，种田魂§r\n§f随着时间的流逝，你会获得免费的肥料精华，魔法肥料甚至生长加速器";
+onewatter.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+      if(WorldTime % 150 == 0){
+    player.give(<item:mysticalagriculture:fertilized_essence>);
+      }
+      if(WorldTime % 600 == 0){
+    player.give(<item:mysticalagriculture:mystical_fertilizer>);
+      }
+      if(WorldTime % 12000 == 0){
+        if(Math.random() < 0.2){
+    player.give(<item:mysticalagriculture:growth_accelerator>);
+      }
+      }
+};
+onewatter.register();
+
+val strdrosmart = ArmorTraitBuilder.create("strdrosmart");
+strdrosmart.color = 0xffaadd;
+strdrosmart.localizedName = "星龙的智慧";
+strdrosmart.localizedDescription = "德高望重§r\n§f每隔稍长的一段时间后，你的经验就会增长一次";
+strdrosmart.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(armor.tag.lastTime)){//判断nbt是否为非空
+      val lastTime = armor.tag.lastTime;//获取上次触发时间
+      if(WorldTime - lastTime>18000){//判断与上次触发时间的距离
+        player.executeCommand("xp 2L @p");
+        armor.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间
+    }  
+};
+strdrosmart.register();
+
+val undisturbed = ArmorTraitBuilder.create("undisturbed");
+undisturbed.color = 0xffaadd;
+undisturbed.localizedName = "混乱守护";
+undisturbed.localizedDescription = "你的反抗只会让你更加痛苦§r\n§f随着你扭曲的提升获得更高的伤害减免";
+undisturbed.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if (!isNull(player)){
+        var warp as int = 0;
+        var player as IPlayer = player;
+        warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+        if(warp >50){
+            return (0.80f * newDamage) as float;
+        }
+        else{
+            return (0.80f * (warp as float /100.0f) * newDamage) as float;
+        }
+    }
+    return newDamage;
+};
+undisturbed.register();
+
+val vtb = ArmorTraitBuilder.create("vtb");
+vtb.color = 0xffaadd;
+vtb.localizedName = "虚空庇佑";
+vtb.localizedDescription = "驱散那些弱小的东西§r\n§f虚空的力量会保护你不受疫染等负面效果的侵害";
+vtb.onAbility= function(trait, level, world, player) {
+     if (!player.isPotionActive(<potion:potioncore:cure>)){
+    server.commandManager.executeCommand(server,"effect "+player.name+" potioncore:cure 1 1");
+    }
+};
+vtb.register();
+
+val gooodluck4u = ArmorTraitBuilder.create("gooodluck4u");
+gooodluck4u.color = 0xf3d261;
+gooodluck4u.localizedName = "致初入此处者";
+gooodluck4u.localizedDescription = "愿你在新世界的旅途一切安好§r\n§f在主世界受到的伤害提高，在非主世界的维度受到伤害降低";
+gooodluck4u.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(!player.dimension == 0){
+        return 0.7f * newDamage;
+    }
+    if(player.dimension == 0){
+        return 1.85f * newDamage;
+    }
+    return newDamage;
+};
+gooodluck4u.register();
+
+val ccmusic = ArmorTraitBuilder.create("ccmusic");
+ccmusic.color = 0xffaadd;
+ccmusic.localizedName = "凤凰之音（或许）";
+ccmusic.localizedDescription = "额，这就是凤鸣么§r\n§f在你受到攻击时所有人都会听到这个声音";
+ccmusic.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(Math.random() <= 1){
+    if(isNull(player)) return damage;
+    if(isNull(source.getTrueSource())) return damage;
+        player.executeCommand("playsound entity.chicken.ambient master @a 1 1 1 15 1.0 1.0");
+    return damage;
+    }return newDamage;
+};
+ccmusic.register();
+
+val abathTrait = ArmorTraitBuilder.create("abath");
+abathTrait.color = 0xffaadd;
+abathTrait.localizedName = "醒悟";
+abathTrait.localizedDescription = "此心湛然,尚觉可用§r\n§f当你受到亡灵生物攻击时,有概率降低你的临时扭曲或普通扭曲";
+abathTrait.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    var Rand = Math.random();
+    var attacker as IEntityLivingBase = source.getTrueSource();
+    if(attacker.isUndead){
+        if (Rand >= 0.8) {
+    player.warpNormal -=1;
+    return newDamage ;
+    }
+     if (Rand >= 0.55) {
+    player.warpTemporary -=3;
+    return newDamage ;
+    }
+    player.warpNormal -=0;
+     return newDamage ;
+    }return newDamage;
+};
+abathTrait.register();
+
+val adaptationTrait = ArmorTraitBuilder.create("adaptation");
+adaptationTrait.color = 0xfeeeed;
+adaptationTrait.localizedName = "适应";
+adaptationTrait.localizedDescription = "撑开魔力屏障！§r\n§f给予玩家夜视、扭曲守护效果，给予玩家水肺,抗火效果并熄灭玩家身上的火焰";
+
+adaptationTrait.onArmorTick = function(trait, armor, world, player){
+     if (!player.isPotionActive(<potion:minecraft:fire_resistance>)||!player.isPotionActive(<potion:minecraft:night_vision>)||!player.isPotionActive(<potion:minecraft:water_breathing>)||!player.isPotionActive(<potion:minecraft:fire_resistance>)){
+             player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(600, 0, false, false));
+     player.addPotionEffect(<potion:thaumcraft:warpward>.makePotionEffect(200, 0, false, false));
+     player.addPotionEffect(<potion:minecraft:water_breathing>.makePotionEffect(200, 0, false, false));
+     player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(200, 0, false, false));
+    }
+    if(player.isBurning){     player.addPotionEffect(<potion: minecraft:fire_resistance>.makePotionEffect(200, 0, false, false));
+    player.setFire(0);
+    }
+};
+
+adaptationTrait.register();
+
+val washerTrait = ArmorTraitBuilder.create("washer");
+washerTrait.color = 0xffaadd;
+washerTrait.localizedName = "浮灵富集";
+washerTrait.localizedDescription = "神秘使的经验总是对的！§r\n§f吸取经验球修复穿戴者所持有的物品和穿戴的装备，无论其是否附魔经验修补";
+washerTrait.onArmorTick = function(trait, armor, world, player){
+    var xep = player.getTotalXP();//玩家经验
+    if(!isNull(armor.tag.lastXp)){//判断nbt是否为非空
+      val lastXp = armor.tag.lastXp;//获取上次触发时间
+      if(xep > lastXp){//判断与上次触发时间的距离
+      player.addPotionEffect(<potion:potioncore:repair>.makePotionEffect(200, 1, false, false));
+        armor.mutable().updateTag({lastXp : xep});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({lastXp : xep});//如果之前没触发过，则记录触发时间
+    }  
+};
+washerTrait.register();
+
+
+val heartiiTrait = ArmorTraitBuilder.create("heartii");
+heartiiTrait.color = 0xffaadd;
+heartiiTrait.localizedName = "重构秘术";
+heartiiTrait.localizedDescription = "你能感受到你的内脏在翻滚蠕动§r\n§f提升你的血量上限";
+heartiiTrait.onAbility= function(trait, level, world, player) {
+    var hel = player.maxHealth;
+     BXLib.addPlayerAdditionsHealth(player,"heartii",20);
+};
+
+heartiiTrait.onArmorRemove = function(trait, armor, player, index) {
+     BXLib.addPlayerAdditionsHealth(player,"heartii",0);
+};
+heartiiTrait.register();
+
+val awarpTrait = ArmorTraitBuilder.create("awarp");
+awarpTrait.color = 0xffaadd;
+awarpTrait.localizedName = "扭曲拥护";
+awarpTrait.localizedDescription = "扭曲累计到一定程度后反而会保护你§r\n§f扭曲越高，防御越高";
+awarpTrait.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if (!isNull(player)){
+        var warp as int = 0;
+        var player as IPlayer = player;
+        warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+
+        var dmg1  = ((500*newDamage)/(3*warp + 200))as float;
+        var dmg2  = ((2800*newDamage)/(3*warp + 2500))as float;
+        var dmg3  = (0.7*newDamage) as float;
+        return max(max(dmg1,dmg2),dmg3) as float;
+    }return newDamage;
+};
+awarpTrait.register();
+
+val consanguinity = ArmorTraitBuilder.create("consanguinity");
+consanguinity.color = 0xffaadd;
+consanguinity.localizedName = "血裔";
+consanguinity.localizedDescription = "“如果早知道作为对立双刃之一如此有趣，我早就开始惹麻烦了”§r\n§f提高玩家的血量上限但使玩家变得易伤且嗜血，在玩家受到攻击后赋予玩家各种正面效果";
+consanguinity.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(player.health >( player.maxHealth as float * 0.02f)){
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:strength 30 1");
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:regeneration 30 0");
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:resistance 30 0");
+        server.commandManager.executeCommand(server,"effect "+player.name+" minecraft:absorpt 10 1");
+        return 1.5f * newDamage as float;
+    }
+    return newDamage;
+};
+
+consanguinity.onArmorTick = function(trait, armor, world, player){
+    player.addPotionEffect(<potion:botania:bloodthirst>.makePotionEffect(30, 1, false, false));
+};
+
+consanguinity.onAbility= function(trait, level, world, player) {
+     BXLib.addPlayerAdditionsHealth(player,"consanguinity",10);
+};
+
+consanguinity.onArmorRemove = function(trait, armor, player, index) {
+     BXLib.addPlayerAdditionsHealth(player,"consanguinity",0);
+};
+consanguinity.register();
+
+val armaraa = ArmorTraitBuilder.create("armaraa");
+armaraa.color = 0xffaadd;
+armaraa.localizedName = "星能汲取:【遁甲】";
+armaraa.localizedDescription = "此空间站协议由【寒冰发信塔】进行转接§r\n§f每隔一段时间使玩家获得短时间的凤凰之火效果";
+armaraa.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(armor.tag.lastTime)){//判断nbt是否为非空
+      val lastTime = armor.tag.lastTime;//获取上次触发时间
+      if(WorldTime - lastTime>2400){//判断与上次触发时间的距离
+        player.addPotionEffect(<potion:astralsorcery:potioncheatdeath>.makePotionEffect(400, 0, false, false));
+        armor.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间
+    }  
+};
+armaraa.register();
+
+val pelotrio = ArmorTraitBuilder.create("pelotrio");
+pelotrio.color = 0xffaadd;
+pelotrio.localizedName = "星辰共鸣:【唤生】";
+pelotrio.localizedDescription = "此空间站协议由【避役发信塔】进行转接§r\n§f不定时的根据你的星能力等级修补你身上和手中的物品";
+pelotrio.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(armor.tag.lastTime)){//判断nbt是否为非空
+      val lastTime = armor.tag.lastTime;//获取上次触发时间
+      if(WorldTime - lastTime>2400){//判断与上次触发时间的距离
+        player.addPotionEffect(<potion:astralsorcery:potioncheatdeath>.makePotionEffect((20*player.getPerkLevel()), 1, false, false));
+        armor.mutable().updateTag({lastTime : WorldTime});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({lastTime : WorldTime});//如果之前没触发过，则记录触发时间
+    }  
+};
+pelotrio.register();
+
+val teawind = ArmorTraitBuilder.create("teawind");
+teawind.color = 0xffaadd;
+teawind.localizedName = "茶之风";
+teawind.localizedDescription = "每日饮茶对你的身体有益§r\n§f当你用手持饮用的方式喝茶后的一个游戏日内，减少你所受到的伤害";
+teawind.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if (player.isPotionActive(<potion:contenttweaker:teawind>)){
+        return (newDamage - 3.0f);
+    }
+    return newDamage;
+};
+teawind.register();
+
+val foxsh = ArmorTraitBuilder.create("foxsh");
+foxsh.color = 0xffaadd;
+foxsh.localizedName = "狐狸の守";
+foxsh.localizedDescription = "守？感觉不是这个字吧()§r\n§f为你提供小幅度伤害减免";
+foxsh.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    return (0.92f * newDamage) as float;
+};
+foxsh.register();
+
+val huax = ArmorTraitBuilder.create("huax");
+huax.color = 0xffaadd;
+huax.localizedName = "华胥";
+huax.localizedDescription = "锻翊者的陌路§r\n§f提供极小幅度的伤害减免，耐久消耗增加";
+huax.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    return (0.96f * newDamage) as float;
+};
+huax.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+    return 2*newAmount as int;//CODE
+};
+huax.register();
+
+val pinyin = ArmorTraitBuilder.create("pinyin");
+pinyin.color = 0xffaadd;
+pinyin.localizedName = "醲澧";
+pinyin.localizedDescription = "满堂花醉三千客……§r\n§f获得力量与速度，玩家受到伤害增加";
+pinyin.onArmorTick = function(trait, armor, world, player){
+    player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(20, 1, false, false));//两秒，40刻，备忘用
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(20, 1, false, false));//两秒，40刻，备忘用//修！！！
+};   
+pinyin.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    return (1.08f * newDamage) as float;
+};
+
+pinyin.register();
+
+val yvzhang = ArmorTraitBuilder.create("yvzhang");
+yvzhang.color = 0xffaadd;
+yvzhang.localizedName = "玉璋";
+yvzhang.localizedDescription = "玉璨般的荣耀\n§f白天时给予玩家少量的伤害减免";
+ 
+yvzhang.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    var world as IWorld = player.world;
+    if(world.isDayTime()){
+    return (0.94f * newDamage) as float;
+    }return newDamage;
+};
+
+yvzhang.register();
+
+val poiu = ArmorTraitBuilder.create("poiu");
+poiu.color = 0xffaadd;
+poiu.localizedName = "清平";
+poiu.localizedDescription = "何日要荒同入贡，普天钟鼓乐清平§r\n§f持续清除身上的所有负面效果";
+poiu.onAbility= function(trait, level, world, player) {
+     if (!player.isPotionActive(<potion:potioncore:cure>)){
+    server.commandManager.executeCommand(server,"effect "+player.name+" potioncore:cure 1 1");
+    }
+};
+poiu.register();
+
+val zhuyuanzhang = ArmorTraitBuilder.create("zhuyuanzhang");
+zhuyuanzhang.color = 0xffaadd;
+zhuyuanzhang.localizedName = "强运";
+zhuyuanzhang.localizedDescription = "爱滑稽的人运气都不会差§r\n§f持续给予玩家幸运效果";
+zhuyuanzhang.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:minecraft:luck>.makePotionEffect(1, 0, false, false));
+};
+zhuyuanzhang.register();
+
+
+val zhengmianshangwo = ArmorTraitBuilder.create("zhengmianshangwo");
+zhengmianshangwo.color = 0xffaadd;
+zhengmianshangwo.localizedName = "钢守凭依";
+zhengmianshangwo.localizedDescription = "“总有一天我能收集到千刃，在那之前...”\n§f玩家非背面受到的伤害减少，背面受到的伤害增加";
+ zhengmianshangwo.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    var zhang3 as IEntityLivingBase = source.trueSource;
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    if (zhang3.health == player.health) return newDamage;
+    if(!player.world.remote ){
+var faceingA as IFacing = IFacing.getDirectionFromEntityLiving(player.position, player);
+var faceingT as IFacing = IFacing.getDirectionFromEntityLiving(zhang3.position, zhang3);
+if(faceingA == faceingT){
+return(1.35f*newDamage) as float;
+}}
+return(0.9f*newDamage) as float;
+};
+
+zhengmianshangwo.register();
+
+
+val coolman = ArmorTraitBuilder.create("coolman");
+coolman.color = 0xffaadd;
+coolman.localizedName = "雪境生存法则";
+coolman.localizedDescription = "“这位更是血肉畸变...雪境啊？那这位更是神经退行小美Shift”\n§f当你血量首次降低到一半以下后受击时，使玩家持续恢复血量并提升抗性，期间会冰冻玩家（可储存(1)次，你可以通过“使用顶端材料修复盔甲”来恢复触发次数）";
+
+coolman.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if(player.health <( player.maxHealth as float * 0.5f)){
+        val xf = armor.tag.xiufu;//获取修复状态
+        if(xf == 2 ){
+        server.commandManager.executeCommand(server,"effect "+player.name+" contenttweaker:winters 0 0");
+player.addPotionEffect(<potion:mowziesmobs:frozen>.makePotionEffect(100, 0, false, false));
+player.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(100, 2, false, false));
+player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(100, 2, false, false));
+armor.mutable().updateTag({xiufu : 0 });//修改状态情况
+    }}
+    return newDamage;
+};
+
+coolman.onArmorTick = function(trait, armor, world, player) {
+    if(!isNull(armor.tag.xiufu)){//判断nbt是否为非空
+      val xf = armor.tag.xiufu;//获取修复状态
+      if(xf == 1 ){//判断是否修复过
+        player.addPotionEffect(<potion:contenttweaker:winters>.makePotionEffect(432000, 0, false, false));//给予药水效果
+        armor.mutable().updateTag({xiufu : 2 });//修改状态情况
+      }}
+};
+
+coolman.onArmorRepair = function(trait, armor, amount) { 
+   armor.mutable().updateTag({xiufu : 1 });
+};
+
+coolman.register();
+
+val kuafu = ArmorTraitBuilder.create("kuafu");
+kuafu.color = 0xffaadd;
+kuafu.localizedName = "逐日者";
+kuafu.localizedDescription = "赞美太阳！\n§f在白天或拥有太阳祝福时给予玩家少量的伤害减免";
+ 
+kuafu.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    var world as IWorld = player.world;
+    if(world.isDayTime()){
+    return (0.94f * newDamage) as float;
+    }return newDamage;
+};
+
+kuafu.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if (!player.isPotionActive(<potion:mowziesmobs:geomancy>)){
+        return newDamage;
+    }
+    return (0.94f * newDamage) as float;
+};
+
+kuafu.register();
+
+
+val redbaoshi = ArmorTraitBuilder.create("redbaoshi");
+redbaoshi.color = 0xffaadd;
+redbaoshi.localizedName = "Haoran 的崇拜";
+redbaoshi.localizedDescription = "哦，哈利，墙上的哈利，谁是他们当中毛发最多的？§r\n§f若玩家处于凋零状态，给予玩家些许百分比伤害减免";
+redbaoshi.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+	if (player.isPotionActive(<potion:minecraft:wither>)){
+		return 0.94f * newDamage;
+    }
+    return newDamage;
+};
+redbaoshi.register();
+
+//此词条可能需要修改
+val soul_absourceTrait = ArmorTraitBuilder.create("soul_absource");
+soul_absourceTrait.color = Color.fromHex("ff5722").getIntColor();
+soul_absourceTrait.localizedName = game.localize("greedycraft.tconstruct.armor_trait.soul_absourceTrait.name");
+soul_absourceTrait.localizedDescription = game.localize("greedycraft.tconstruct.armor_trait.soul_absourceTrait.desc");
+soul_absourceTrait.onHurt = function(trait, armor, player, source, damage, newDamage, evt) {
+    if(!player.world.remote && Math.random() < 0.5 && player.xp >= 30){
+            player.xp -= 23;
+            return newDamage * 0.65f;
+    }
+    return newDamage;
+};
+soul_absourceTrait.register();
+
+val strongVaccineTrait = ArmorTraitBuilder.create("strong_vaccine");
+strongVaccineTrait.color = Color.fromHex("00ffcc").getIntColor(); 
+strongVaccineTrait.localizedName = game.localize("greedycraft.tconstruct.armor_trait.strongVaccineTrait.name");
+strongVaccineTrait.localizedDescription = game.localize("greedycraft.tconstruct.armor_trait.strongVaccineTrait.desc");
+strongVaccineTrait.onAbility = function(trait, level, world, player) {
+    if (!isNull(player)) {
+        if(player.isPotionActive(<potion:abyssalcraft:cplague>)) {
+            player.removePotionEffect(<potion:abyssalcraft:cplague>);
+        }
+        if(player.isPotionActive(<potion:abyssalcraft:dplague>)) {
+            player.removePotionEffect(<potion:abyssalcraft:dplague>);
+        }
+    }
+};
+strongVaccineTrait.register();
+
+val visionTrait = ArmorTraitBuilder.create("vision");
+visionTrait.color = Color.fromHex("ffeb3b").getIntColor();
+visionTrait.localizedName = game.localize("greedycraft.tconstruct.armor_trait.visionTrait.name");
+visionTrait.localizedDescription = game.localize("greedycraft.tconstruct.armor_trait.visionTrait.desc");
+visionTrait.onAbility = function(trait, level, world, player) {
+    if (!isNull(player)) {
+        player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(330, 2, false, false));
+    }
+};
+visionTrait.register();
+
+val blueman = ArmorTraitBuilder.create("blueman");
+blueman.color = 0xffaadd;
+blueman.localizedName = "真蓝人";
+blueman.localizedDescription = "真蓝人勇往直前§r\n§f玩家受击时获得抗性提升，当玩家生命垂危时获得持续的更强的抗性提升";
+
+blueman.onHurt = function(trait, armor, player, source, damage, newDamage, evt) {
+     player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(20, 0, false, false));
+     return newDamage;
+};
+
+blueman.onAbility = function(trait, level, world, player) {
+  if (player.health < 5){
+    player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(20, 1, false, false));
+  }
+};
+blueman.register();
+
+val greedycraft2 = ArmorTraitBuilder.create("greedycraft2");
+greedycraft2.color = 0x426ab3;
+greedycraft2.localizedName = "贪婪之噬";
+greedycraft2.localizedDescription = "正所谓，所有努力都将予以报答§r\n§f玩家的阶段越高，减伤越高！";
+greedycraft2.addItem(<item:text:twilight_gem>);
+greedycraft2.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(player.hasGameStage("chaotic")){
+return newDamage * 0.68f;
+    }else if(player.hasGameStage("draconic")){
+return newDamage * 0.76f;
+    }else if(player.hasGameStage("cobalt")){
+return newDamage * 0.84f;
+    }else if(player.hasGameStage("first")){
+return newDamage * 0.92f;
+    }else{
+      return newDamage ;  
+    }
+};
+greedycraft2.register();
+
+val fqdyw = ArmorTraitBuilder.create("fqdyw");
+fqdyw.color = 0x7bbfea;
+fqdyw.localizedName = "非酋的野望";
+fqdyw.localizedDescription = "当了一辈子非酋，啥时候能做个欧皇呢§r\n§f为玩家提供幸运效果";
+fqdyw.addItem(<item:text:ganzangshelder>);
+fqdyw.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:minecraft:luck>.makePotionEffect(30, 0, false, false));
+};
+fqdyw.register();
+
+val twilit = ArmorTraitBuilder.create("twilit");
+twilit.color = 0xfeeeed;
+twilit.localizedName = "暮光";
+twilit.localizedDescription = "那微弱的光芒便是暮色森林的祝福§r\n§f在暮色森林里速度更快\n§f在暮色森林外受伤更少";
+twilit.extraInfo = function(thisTrait, item, tag){
+    var infos as string[] = ["在暮色森林内移动速度 +20%", "在暮色森林外受伤减少 -1"];
+    return infos;
+};
+
+twilit.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if (player.world.getDimension() == -777){
+    return newDamage;
+    }else{
+    return (newDamage - 1.0f);}
+};
+
+twilit.onAbility= function(trait, level, world, player) {
+    if (player.world.getDimension() == -777){
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(30, 0, false, false));}
+};
+twilit.register();
+
+val twilit4 = ArmorTraitBuilder.create("twilit4");
+twilit4.color = 0xfeeeed;
+twilit4.localizedName = "暮光";
+twilit4.localizedDescription = "那微弱的光芒便是暮色森林的祝福§r\n§f在暮色森林里速度更快\n§f在暮色森林外受伤更少";
+twilit4.extraInfo = function(thisTrait, item, tag){
+    var infos as string[] = ["在暮色森林内移动速度 +20%", "在暮色森林外受伤减少 -1"];//防止与预谋的药水效果冲突而不生效
+    return infos;
+};
+
+twilit4.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if (player.world.getDimension() == -777){
+    return newDamage;
+    }else{
+    return (newDamage - 1.5f);}
+};
+
+twilit4.register();
+
+val premeditate = ArmorTraitBuilder.create("premeditate");
+premeditate.color = 0xfeeeed;
+premeditate.localizedName = "预谋";
+premeditate.localizedDescription = "最初的应急预案§r\n§f常态下获得移速加成，你的生命值越少它就越快\n§f脱战一定时间后缓慢回血";
+premeditate.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:contenttweaker:nimble>.makePotionEffect(30, 3, false, false));
+
+};
+
+premeditate.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    var world = player.world;
+    var WorldTime = world.getWorldTime();
+    armor.mutable().updateTag({lastTime : WorldTime});
+return newDamage;
+
+premeditate.onArmorTick = function(trait, armor, world, player) {
+    var WorldTime = world.getWorldTime();
+  val lastTime = armor.tag.lastTime;//获取上次触发时间
+      if(WorldTime - lastTime>600){//判断与上次触发时间的距离
+player.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(30, 1, false, false));
+      }
+};
+};
+
+premeditate.register();
+
+val yellomoon = ArmorTraitBuilder.create("yellomoon");
+yellomoon.color = 0xfeeeed;
+yellomoon.localizedName = "煌煌之月";
+yellomoon.localizedDescription = "来自暮光的仁慈，虽然不多§r\n§f给予玩家夜视与防火";
+yellomoon.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(300, 0, false, false));
+};
+
+yellomoon.register();
+
+
+val coward = ArmorTraitBuilder.create("coward");
+coward.color = 0xffaadd;
+coward.localizedName = "唤魂仪式";
+coward.localizedDescription = "无意之举往往造就一线生机§r\n§f在玩家即将死亡时救回玩家，但是会使其陷入惊慌失措的状态\n可储存（1）次，你可以通过使用附魂权杖来恢复储存次数";
+//受伤时，濒死时，有{准备}时（这里别用&&）无效本次伤害，给予不知所措与回血(成功生效)
+coward.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    val world = player.world;
+    var WorldTime = world.getWorldTime();//世界时间
+    if(player.health <damage){
+        if(player.isPotionActive(<potion:contenttweaker:readyscar>)){
+            player.removePotionEffect(<potion:contenttweaker:readyscar>);
+player.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(20, 6, false, false));
+        player.addPotionEffect(<potion:contenttweaker:scared>.makePotionEffect(2400, 0, false, false));
+        armor.mutable().updateTag({lastTime : WorldTime});
+    return newDamage * 0.0f;
+    }return newDamage;
+    }return newDamage;
+};
+//拥有{沃德发}时，清除{沃德发}，给予{准备}（成功生效）
+coward.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+      if(player.isPotionActive(<potion:contenttweaker:killboss>)){
+        player.removePotionEffect(<potion:contenttweaker:killboss>);
+    player.addPotionEffect(<potion:contenttweaker:readyscar>.makePotionEffect(48000, 0, false, false));
+      }
+};
+coward.register();
+
+val iceboss = ArmorTraitBuilder.create("iceboss");
+iceboss.color = 0xfeeeed;
+iceboss.localizedName = "冰狱";
+iceboss.localizedDescription = "“不。此地乃本皇永恒之宫殿。”§r\n§f受到攻击时，使敌我双方获得一定时间的冻结，若玩家拥有温暖则可避免受到冻结";
+iceboss.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+ player.addPotionEffect(<potion:twilightforest:frosted>.makePotionEffect(100, 1, false, false));
+ attacker.addPotionEffect(<potion:twilightforest:frosted>.makePotionEffect(100, 1, false, false));
+ return newDamage;
+};
+iceboss.register();
+
+
+val iceeboss = ArmorTraitBuilder.create("iceeboss");
+iceeboss.color = 0xfeeeed;
+iceeboss.localizedName = "雪暴";
+iceeboss.localizedDescription = "“整个宫殿都将消融……放肆……！”§r\n§f受到来自低处的伤害减少，若玩家处于冻结中则增强这一效果";//死亡缩进警告
+iceboss.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntity = source.trueSource;
+    var a = attacker.getY();
+    var p = player.getY();
+    if (a < p){
+        if (player.isPotionActive(<potion:twilightforest:frosted>)){
+        return newDamage * 0.84f;}
+        else {return newDamage * 0.92f;}
+    }else{return newDamage;}
+};
+iceeboss.register();
+
+
+val runner = ArmorTraitBuilder.create("runner");
+runner.color = 0xfeeeed;
+runner.localizedName = "无畏冲锋";
+runner.localizedDescription = "你感觉你壮得像头牛！§r\n§f当玩家处于冲锋状态时，减免部分伤害\n食用即食米诺口粮来获得冲锋效果";
+runner.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if (player.isPotionActive(<potion:beto:running>)){
+        if (!player.isPotionActive(<potion:minecraft:slowness>)){
+        player.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(80, 1, false, false));
+        return newDamage * 0.88f;}
+        return newDamage ;}
+        else {return newDamage ;}
+    
+};
+runner.register();
+
+val leidoo = ArmorTraitBuilder.create("leidoo");
+leidoo.color = 0xfeeeed;
+leidoo.localizedName = "寻仇者";
+leidoo.localizedDescription = "“我点燃危机，日夜燃烧；我炽热滚烫，无法触及”§r\n§f当玩家生命值处于一半以下时，提升玩家的攻速，移速并赋予玩家炽血效果";
+leidoo.onAbility= function(trait, level, world, player) {
+     if(player.health <( player.maxHealth as float * 0.5f)){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(80, 1, false, false));
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(80, 1, false, false));
+    player.addPotionEffect(<potion:contenttweaker:redknife>.makePotionEffect(80, 0, false, false));
+    }
+};
+leidoo.register();
+
+val yummy = ArmorTraitBuilder.create("yummy");
+yummy.color = 0xfeeeed;
+yummy.localizedName = "绝味";
+yummy.localizedDescription = "入口为香，后泛辣意，油脂的香气和肉质滑嫩的感觉不断在你的口腔回荡！§r\n§ 比起挨饿，你更愿意吃掉你的盔甲，但你的盔甲不会因此受到任何损坏";
+yummy.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();
+    if(!isNull(armor.tag.lastTime)){
+      val lastTime = armor.tag.lastTime;
+      if(WorldTime - lastTime>3600){
+        player.foodStats.addStats(2,2.0);
+        armor.mutable().updateTag({lastTime : WorldTime});
+      }
+    }else{
+        armor.mutable().updateTag({lastTime : WorldTime});
+    }  
+};
+yummy.register();
+
+val olive = ArmorTraitBuilder.create("olive");
+olive.color = 0xfeeeed;
+olive.localizedName = "组织代偿";
+olive.localizedDescription = "你感觉到幻影骑士的力量在你身上涌现...又或者是什么其他玩意在你身上蛄蛹造成的错觉？§r\n§ 为玩家提供诸多防御效果\n玩家处于共生状态下时增强这些效果\n若玩家血量低于三分之一则再次增强这些效果但使玩家额外获得魔法破防效果";
+olive.onArmorTick = function(trait, armor, world, player){
+if(!player.isPotionActive(<potion:contenttweaker:oliveman>)){
+    player.addPotionEffect(<potion:rustic:ironskin>.makePotionEffect(60, 0, false, false));
+    player.addPotionEffect(<potion:rustic:magic_resistance>.makePotionEffect(60, 0, false, false));
+    }
+else if(player.health <( player.maxHealth as float * 0.33f)){
+    player.addPotionEffect(<potion:rustic:ironskin>.makePotionEffect(20, 2, false, false));
+    player.addPotionEffect(<potion:potioncore:iron_skin>.makePotionEffect(20, 0, false, false));
+    player.addPotionEffect(<potion:potioncore:diamond_skin>.makePotionEffect(20, 0, false, false));
+    player.addPotionEffect(<potion:potioncore:broken_magic_shield>.makePotionEffect(20, 2, false, false));
+}else{
+    player.addPotionEffect(<potion:rustic:ironskin>.makePotionEffect(60, 1, false, false));
+    player.addPotionEffect(<potion:rustic:magic_resistance>.makePotionEffect(60, 1, false, false));
+}
+};
+olive.register();
+
+
+val hoomooarknight = ArmorTraitBuilder.create("hoomooarknight");
+hoomooarknight.color = 0xfeeeed;
+hoomooarknight.localizedName = "气候共振";
+hoomooarknight.localizedDescription = "和环境调谐完全不是一个东西!§r\n§ 根据玩家所处群系的气候条件，为玩家提供不同种类的增益";
+hoomooarknight.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+var world = player.world;
+var target as IEntityLivingBase = source.trueSource;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.canRain){
+if (gl<0.2){
+    target.setFire(100);
+    return newDamage;
+}
+else if (gl<0.4){
+    target.addPotionEffect(<potion:tconstruct:dot>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+}else return newDamage;
+}else {
+  if (gl<0.2){
+    target.addPotionEffect(<potion:minecraft:regeneration>.makePotionEffect(100, 0, false, false));
+    return newDamage;
+}else{return newDamage;}  
+}
+};
+
+hoomooarknight.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+var world = player.world;
+var target as IEntityLivingBase = source.trueSource;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.isSnowyBiome){
+target.addPotionEffect(<potion:minecraft:slowness>.makePotionEffect(100, 1, false, false));
+return newDamage;
+}else {
+  return newDamage*0.95f;
+}
+};
+
+hoomooarknight.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+var world = player.world;
+var target as IEntityLivingBase = source.trueSource;
+var bop = world.getBiome(player.position);
+var gl = Math.random();
+if (bop.highHumidity){
+player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(80, 0, false, false));
+player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(80, 0, false, false));
+return 1.1f*newDamage;
+}else {
+  return newDamage;
+}
+};
+hoomooarknight.register();
+
+val endoftwfo = ArmorTraitBuilder.create("endoftwfo");
+endoftwfo.color = 0xfeeeed;
+endoftwfo.localizedName = "终兆回响";
+endoftwfo.localizedDescription = "看着这个汇聚了暮色之力的盔甲，你回想起了你在暮色的每一战§r\n§ 玩家处于灵动状态下会概率闪避敌人的攻击\n冲锋时免疫缓慢\n共生时免疫魔法破防\n温暖时提供额外的弹射物伤害减免";
+endoftwfo.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if (player.isPotionActive(<potion:beto:running>)){
+    if((Math.random() < 0.1)){return  0.0f * newDamage;}
+    else{return newDamage;}
+}else{return newDamage;}
+};
+
+endoftwfo.onAbility = function(trait, level, world, player) {
+    if (!isNull(player)) {
+        if(player.isPotionActive(<potion:beto:running>)) {
+            player.removePotionEffect(<potion:minecraft:slowness>);
+        }
+        if(player.isPotionActive(<potion:contenttweaker:oliveman>)) {
+            player.removePotionEffect(<potion:potioncore:broken_magic_shield>);
+        }
+    }
+};
+
+endoftwfo.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(source.isProjectile()){
+         return 0.3f * newDamage;
+    }
+    return newDamage;
+};
+endoftwfo.register();
+
+val happily = ArmorTraitBuilder.create("happily");
+happily.color = 0xfeeeed;
+happily.localizedName = "炽热悲恸";
+happily.localizedDescription = "哀伤如暴雨般倾盆而下......§r\n§f使玩家进入哀伤灵魂状态，当玩家受击后使玩家转而进入短时间的悲恸状态";
+
+happily.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if(!player.isPotionActive(<potion:contenttweaker:veryhappy>)){
+    return 0.3f*newDamage ;
+    player.addPotionEffect(<potion:contenttweaker:veryhappy>.makePotionEffect(80, 0, false, false));
+}else if(player.isPotionActive(<potion:contenttweaker:happy>)){
+     return 1.35f*newDamage ;
+}else{return newDamage;} };
+    
+happily.onArmorTick = function(trait, armor, world, player){
+if(!player.isPotionActive(<potion:contenttweaker:veryhappy>)){
+    if(!player.isPotionActive(<potion:contenttweaker:happy>)){
+    player.addPotionEffect(<potion:contenttweaker:happy>.makePotionEffect(100, 0, false, false));
+    }
+    }
+};
+happily.register();
+
+val voidshelder = ArmorTraitBuilder.create("voidshelder");
+voidshelder.color = 0xfeeeed;
+voidshelder.localizedName = "虚无加护";
+voidshelder.localizedDescription = "来自维度彼端的加护，“若是本就空无一物，就不会有所失去了吧”§r\n§f受到伤害时有一定概率闪避本次伤害，玩家拥有虚无庇护时此概率大幅上升";
+voidshelder.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if(!player.isPotionActive(<potion:contenttweaker:voidsheld>)){
+  if (Math.random() <=0.2){
+return 0.0f*newDamage;}
+else return newDamage;
+  }else{
+   if (Math.random() <=0.7){
+  player.addPotionEffect(<potion:contenttweaker:placeholder_a>.makePotionEffect(20, 0, false, false));
+return 0.0f*newDamage;}
+else return newDamage; 
+  }
+  };
+voidshelder.register();
+
+val neverarmor = ArmorTraitBuilder.create("neverarmor");
+neverarmor.color = 0xfeeeed;
+neverarmor.localizedName = "虚无铠甲";
+neverarmor.localizedDescription = "她们纷纷化作无意识的游魂……§r\n§f玩家受到攻击时有较低的概率获得较短时间虚无庇护\n若玩家在虚无的庇护下闪避成功，则显现虚无意志";
+neverarmor.onAbility = function(trait, level, world, player) {
+    if (!isNull(player)) {
+        if(player.isPotionActive(<potion:contenttweaker:placeholder_a>)) {
+            player.addPotionEffect(<potion:contenttweaker:voidmind>.makePotionEffect(400, 0, false, false));
+        }
+    }
+};
+
+neverarmor.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+if (Math.random() <=0.08){
+  player.addPotionEffect(<potion:contenttweaker:voidsheld>.makePotionEffect(100, 0, false, false));
+return newDamage;}
+else return newDamage;
+  
+  };
+neverarmor.register();
+
+val newff = ArmorTraitBuilder.create("newff");
+newff.color = 0xfeeeed;
+newff.localizedName = "FF";
+newff.localizedDescription = "“放下的包袱会让你的身姿更灵活，庞大的身躯则会让猎物的攻击更笨重”§r\n§f略微提升玩家所受到的伤害\n玩家血量上限低于一定程度时有概率闪避伤害\n血量上限越低闪避概率越高，若攻击来自boss则会拥有额外的基础闪避率";
+newff.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    var sbin =Math.random();
+    var hp=player.maxHealth;
+    var gl = min(0.6,(0.02*(70-hp)));
+    var glt= gl+0.15;
+if (source.trueSource.isBoss){
+if (hp>70){
+    return 1.05f*newDamage;
+} else if(hp>=40){
+if (sbin<glt){return 0.0f*newDamage;}
+    else{return 1.05f*newDamage;}
+}else {
+    if (sbin<0.75){return 0.0f*newDamage;}
+    else{return 1.05f*newDamage;}
+}
+}else {
+    if (hp>70){
+    return 1.05f*newDamage;
+} else if(hp>=40){
+if (sbin<gl){return 0.0f*newDamage;}
+    else{return 1.05f*newDamage;}
+}else {
+    if (sbin<0.6){return 0.0f*newDamage;}
+    else{return 1.05f*newDamage;}
+}}
+};
+newff.register();
+
+val newtz = ArmorTraitBuilder.create("newtz");
+newtz.color = 0xffaadd;
+newtz.localizedName = "沉眠之神";
+newtz.localizedDescription = "无论何时、何地、以何种姿态苏醒，祂永远知晓问题的答案§r\n§f扭曲越高，所受到的伤害就越低\n对boss拥有额外减伤\n理智守护和治愈会导致所受伤害提高";
+newtz.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if (!isNull(player)){
+        var warp as int = 0;
+        var player as IPlayer = player;
+        warp = player.warpNormal + player.warpTemporary + player.warpPermanent;
+
+        var dmg1  = ((500*newDamage)/(3*warp + 200))as float;
+        var dmg2  = ((2800*newDamage)/(3*warp + 2500))as float;
+        var dmg3  = (0.7*newDamage) as float;
+        return max(max(dmg1,dmg2),dmg3) as float;
+    }return newDamage;
+};
+newtz.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+if(isNull(source.trueSource)) return newDamage;
+if(source.trueSource.isBoss){
+        return (newDamage * 0.8f) as float;
+    }else{return newDamage;}};
+
+newtz.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(player.isPotionActive(<potion:thaumcraft:warpward>)){
+        return 1.5f*newDamage as float;
+    }else if(player.isPotionActive(<potion:potioncore:cure>)){
+        return 1.3f*newDamage as float;}
+        else {return newDamage;}
+};
+newtz.register();
+
+val wire = ArmorTraitBuilder.create("wire");
+wire.color = 0xffaadd;
+wire.localizedName = "引火绒";
+wire.localizedDescription = "引火上身§r\n§f赋予玩家抗火";
+wire.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+};
+
+wire.register();
+
+val woter = ArmorTraitBuilder.create("woter");
+woter.color = 0xffaadd;
+woter.localizedName = "排雨渠";
+woter.localizedDescription = "汇雨成河§r\n§f赋予玩家夜视与水下呼吸";
+woter.onAbility= function(trait, level, world, player) {
+    player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:water_breathing>.makePotionEffect(300, 0, false, false));
+};
+
+woter.register();
+
+val willindy = ArmorTraitBuilder.create("willindy");
+willindy.color = 0xffaadd;
+willindy.localizedName = "迎风翼";
+willindy.localizedDescription = "顺风而浮§r\n§f玩家所处位置越高，移速越高";
+willindy.onAbility= function(trait, level, world, player) {
+var t = player.getY();
+    var a = min(3,(0.025*t)) as float;
+if (t>60){
+player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(200, a, false, false));
+}
+};
+
+willindy.register();
+
+val wondtap = ArmorTraitBuilder.create("wondtap");
+wondtap.color = 0xffaadd;
+wondtap.localizedName = "镇土岩";
+wondtap.localizedDescription = "夯土于行§r\n§f玩家所处位置越低，挖掘速度越快";
+wondtap.onAbility= function(trait, level, world, player) {
+var t = player.getY();
+if (t<60){
+    var a = min(3,(3-(0.05*t))) as float;
+player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, a, false, false));
+}
+};
+
+wondtap.register();
+
+val gemfino = ArmorTraitBuilder.create("gemfino");
+gemfino.color = 0xffaadd;
+gemfino.localizedName = "元素之咏";
+gemfino.localizedDescription = "皆行于此§r\n§f具有全部元素宝石的特性";
+gemfino.onAbility= function(trait, level, world, player) {
+    var t = player.getY();
+    var a = min(2,(0.025*t)) as float;
+    var b = min(2,(3-(0.025*t))) as float;
+if (t<60){
+    player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:water_breathing>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(20, a, false, false));
+    return;
+} else {
+player.addPotionEffect(<potion:minecraft:fire_resistance>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:night_vision>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:water_breathing>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(200, b, false, false));
+}
+};
+gemfino.register();
+
+val newxy = ArmorTraitBuilder.create("newxy");
+newxy.color = 0xffaadd;
+newxy.localizedName = "宙空之理";
+newxy.localizedDescription = "星移，雨止§r\n§f持续为玩家恢复饱食度和饱和度且为玩家治愈负面效果(如有其他来源的治愈效果则无法触发)，使天球之律消耗的饥饿值和特性失效持续时间减半并在天球之律失效期间为玩家提供额外的减伤";
+newxy.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+     if (player.isPotionActive(<potion:contenttweaker:nomusic>)){
+         return 0.50f * newDamage;
+    }
+    return newDamage;
+};
+newxy.onArmorTick = function(trait, armor, world, player){
+    player.addPotionEffect(<potion:potioncore:cure>.makePotionEffect(600, 0, false, false)); 
+    player.addPotionEffect(<potion:contenttweaker:ismusic>.makePotionEffect(600, 0, false, false)); 
+    
+};
+newxy.register();
+
+val endknight = ArmorTraitBuilder.create("endknight");
+endknight.color = 0xffaadd;
+endknight.localizedName = "命运的宠儿";
+endknight.localizedDescription = "最后的骑士一跃而起！§r\n§f玩家受伤增加，受伤后进入“海潮的气息”状态，其持续时间随所受伤害而定";
+endknight.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+     player.addPotionEffect(<potion:beto:seawind>.makePotionEffect(damage*20, 0, false, false));
+    return 1.1f*newDamage as float;
+};
+endknight.register();
+
+val saligia = ArmorTraitBuilder.create("saligia");
+saligia.color = 0xffaadd;
+saligia.localizedName = "七宗罪";
+saligia.localizedDescription = "撒旦的诅咒让盔甲更加强大！§r\n§f在下列负面效果中，按顺序持有量越多，受到的伤害就越低\n复发；失明；厄运；恐惧瘟疫；反胃；增重；晕头转向";
+saligia.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+      if (player.isPotionActive(<potion:extrautils2:xu2.relapse>)){
+    return 0.99f *newDamage as float;
+     if (player.isPotionActive(<potion:minecraft:blindness>)){
+    return 0.97f *newDamage as float;
+     if (player.isPotionActive(<potion:extrautils2:xu2.doom>)){
+    return 0.94f *newDamage as float;
+     if (player.isPotionActive(<potion:abyssalcraft:dplague>)){
+    return 0.90f *newDamage as float;
+     if (player.isPotionActive(<potion:potioncore:nausea>)){
+    return 0.85f *newDamage as float;
+     if (player.isPotionActive(<potion:extrautils2:xu2.gravity>)){
+    return 0.79f *newDamage as float;
+     if (player.isPotionActive(<potion:potioncore:spin>)){
+    return 0.72f *newDamage as float;
+    }
+    }
+    }
+    }
+    }
+    }
+    }else return newDamage;
+};
+saligia.register();
+
+val newsjy01 = ArmorTraitBuilder.create("newsjy01");
+newsjy01.color = 0xffaadd;
+newsjy01.localizedName = "龙蒿涌流";
+newsjy01.localizedDescription = "石化树皮正在丛林的淤泥中爆发§r\n§f受到伤害时有几率恢复生命\n潜行受击会使得玩家被生命能量包裹，获得龙蒿披风增益(降低受到的伤害)\n效果结束之后有一定冷却时间";
+newsjy01.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+  
+    if (player.isPotionActive(<potion:contenttweaker:stoplong>)){
+    return newDamage as float;
+    }else{
+        if (player.isPotionActive(<potion:contenttweaker:longsong>)){
+              return 0.4f*newDamage as float;
+        }else{
+            if (player.isSneaking){
+                player.addPotionEffect(<potion:contenttweaker:longsong>.makePotionEffect(400, 0, false, false));
+                return newDamage as float;
+            }else{
+              return newDamage as float;     
+            }
+        }
+    }
+};
+
+newsjy01.onDamaged = function(trait, armor, player, source, damage, newDamage, evt) {
+   var heal = Math.random();
+   if (heal<0.4){
+       player.health += 6;
+       return newDamage as float; 
+   }else{
+    return newDamage as float; 
+   }
+};
+newsjy01.register();
+
+
+val newsjy02 = ArmorTraitBuilder.create("newsjy02");
+newsjy02.color = 0xffaadd;
+newsjy02.localizedName = "始源林海";
+newsjy02.localizedDescription = "你周围的空气变得灼热起来...§r\n§f如果即将受到致命伤害，穿戴者获得始源林海无敌增益，使其在增益时间内无法因受击而死亡\n这个效果有冷却时间，如果是BOSS触发则冷却时间进一步延长";
+
+newsjy02.onHurt= function(trait, armor, player, source, damage, newDamage, evt){
+    if(player.health <damage){
+        if(player.isPotionActive(<potion:contenttweaker:sylhwudi>)){            
+    return newDamage * 0.0f;}
+    else {if(player.isPotionActive(<potion:contenttweaker:stopsylh>)){
+         return newDamage ;
+        }else {if (!(source.trueSource instanceof IEntityLivingBase)){return newDamage;}
+        else if (isNull(source.trueSource)){return newDamage;}
+          else if (source.trueSource.isBoss){
+                player.addPotionEffect(<potion:contenttweaker:sylhwudi>.makePotionEffect(640, 0, false, false));
+         player.addPotionEffect(<potion:contenttweaker:stopsylh>.makePotionEffect(8400, 0, false, false));
+         return newDamage * 0.0f;
+            }else{
+                player.addPotionEffect(<potion:contenttweaker:sylhwudi>.makePotionEffect(640, 0, false, false));
+             player.addPotionEffect(<potion:contenttweaker:stopsylh>.makePotionEffect(6000, 0, false, false));
+         return newDamage * 0.0f;   
+            }}}
+        
+    
+    }else{if(player.isPotionActive(<potion:contenttweaker:sylhwudi>)){            
+    return newDamage * 0.0f;}
+    else return newDamage;}
+};
+newsjy02.register();
+
+
+
+val remana = ArmorTraitBuilder.create("remana");
+remana.color = 0xffaadd;
+remana.localizedName = "贮魔Ⅰ";
+remana.localizedDescription = "自然会帮忙分担工具的伤痕§r\n§f概率消耗你身上的魔力来代替耐久损耗";
+
+remana.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+     var rand = Math.random();
+     var damage as int= amount;
+    if (rand > 0.75){
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+};
+remana.register();
+
+val remanab = ArmorTraitBuilder.create("remanab");
+remanab.color = 0xffaadd;
+remanab.localizedName = "贮魔Ⅱ";
+remanab.localizedDescription = "自然会帮忙分担工具的伤痕§r\n§f更高概率消耗你身上的魔力来代替耐久损耗";
+
+remanab.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+     var rand = Math.random();
+     var damage as int= amount;
+    if (rand > 0.50){
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+};
+remanab.register();
+
+val remanac = ArmorTraitBuilder.create("remanac");
+remanac.color = 0xffaadd;
+remanac.localizedName = "贮魔Ⅲ";
+remanac.localizedDescription = "自然会帮忙分担工具的伤痕§r\n§f极高概率消耗你身上的魔力来代替耐久损耗";
+
+remanac.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+     var rand = Math.random();
+     var damage as int= amount;
+    if (rand > 0.25){
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+};
+remanac.register();
+
+val reshadow = ArmorTraitBuilder.create("reshadow");
+reshadow.color = 0xffaadd;
+reshadow.localizedName = "夜影";
+reshadow.localizedDescription = "黑夜会帮忙摆平工具的伤痕§r\n§f极高概率消耗你身上的魔力来代替耐久损耗，夜晚时转为不再消耗耐久和魔力";
+
+reshadow.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+    var damage as int= amount;
+     if (player.world.isDayTime()){
+    var rand = Math.random();
+    if (rand > 0.25){
+    var yn as bool = (ManaHandler.requestManaExact(player, 100*damage,  true));
+    if(yn == true){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }}else{
+        return 0*newAmount;
+    }
+};
+reshadow.register();
+
+val reson = ArmorTraitBuilder.create("reson");
+reson.color = 0xffaadd;
+reson.localizedName = "日之恩惠";
+reson.localizedDescription = "愿你不会招致王的灭亡§r\n§f白天时极高概率消耗比贮魔更少的魔力来代替耐久损耗，夜晚时不再拥有任何减免";
+
+reson.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+    var damage as int= amount;
+     if (player.world.isDayTime()){
+    var rand = Math.random();
+    if (rand > 0.25){
+    var yn as bool = (ManaHandler.requestManaExact(player, 50*damage,  true));
+    if(yn == true){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }}else{
+        return newAmount;
+    }
+};
+reson.register();
+
+val manaload = ArmorTraitBuilder.create("manaload");
+manaload.color = 0xffaadd;
+manaload.localizedName = "魔力缓冲";
+manaload.localizedDescription = "用魔力来中和动能§r\n§f受到攻击时，消耗魔力来降低受到的伤害";
+manaload.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+   var yn as bool = (ManaHandler.requestManaExact(player, 10*damage,  true));
+    if(yn == true){
+       return 0.7f*newDamage;
+    }else{
+       return newDamage; 
+    }
+};
+manaload.register();
+
+
+val manajump = ArmorTraitBuilder.create("manajump");
+manajump.color = 0xffaadd;
+manajump.localizedName = "动能释放";
+manajump.localizedDescription = "篡改动能和重力势能的实际应用§r\n§f受到攻击时概率垂直弹飞敌人";
+manajump.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        var rand = Math.random();
+    if(rand > 0.75){
+        attacker.addPotionEffect(<potion:potioncore:launch>.makePotionEffect(1, 0, false, false));
+       return 0.85f*newDamage;
+    }else{
+       return newDamage; 
+    }
+};
+manajump.register();
+
+val manaring = ArmorTraitBuilder.create("manaring");
+manaring.color = 0xffaadd;
+manaring.localizedName = "盖亚光环";
+manaring.localizedDescription = "就像多戴了一些光环之戒一样!§r\n§f持续不断的缓慢产出魔力";
+manaring.onArmorTick = function(trait, armor, world, player){
+      ManaHandler.dispatchMana(player, 10, true); 
+};
+manaring.register();
+
+val egr01 = ArmorTraitBuilder.create("egr01");
+egr01.color = 0xffaadd;
+egr01.localizedName = "异路推演";
+egr01.localizedDescription = "如果精灵门彼端的并非盟友而是伪善的掠食者...§r\n§f或许在另一个可能性中，截然不同的事件将世界导向了不同的命运...";
+//目前是空词条，未来添加提供特殊药水效果来引发特殊效果
+egr01.register();
+
+val eatime = ArmorTraitBuilder.create("eatime");
+eatime.color = 0xffaadd;
+eatime.localizedName = "朵颐盛宴";
+eatime.localizedDescription = "“它们会担心自己的食物被别的东西夺走，因此要抢先把食物吃掉。”§r\n§f玩家常态下受到伤害降低，玩家严重负伤时会飞速损失魔力，若玩家没有魔力则会以同等速度损失生命";
+eatime.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+    return 0.65f*newDamage;
+};
+
+eatime.onArmorTick = function(trait, armor, world, player){
+    if(player.health <= (0.20*player.maxHealth)){
+      var yn as bool = (ManaHandler.requestManaExact(player, 10000,  true));
+    if(yn == true){
+        ManaHandler.requestManaExact(player, 10000,  true);
+        ManaHandler.dispatchMana(player, 1, true); //不知道方括号里加点啥瞎几把写的
+    }else{
+    player.health -= 10000;
+    }}else{
+        return;
+    }
+};
+eatime.register();
+
+val stroungh = ArmorTraitBuilder.create("stroungh");
+stroungh.color = 0xffaadd;
+stroungh.localizedName = "强韧";
+stroungh.localizedDescription = "你该更快一些§r\n§f玩家受到来自拥有缓慢的敌人的伤害降低";
+stroungh.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:minecraft:slowness>)){
+            return (newDamage - 3.0f) as float;
+        }else {return newDamage;}
+};
+stroungh.register();
+
+val magnetizations = ArmorTraitBuilder.create("magnetizations");
+magnetizations.color = 0xffaadd;
+magnetizations.localizedName = "磁化";
+magnetizations.localizedDescription = "这边是南磁极，那边是北磁极§r\n§f玩家受到伤害后给予敌人磁化效果";
+magnetizations.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+     var attacker as IEntityLivingBase = source.trueSource;
+     attacker.addPotionEffect(<potion:contenttweaker:bewoman>.makePotionEffect(200, 0, false, false));
+     return newDamage;
+};
+magnetizations.register();
+
+val repulsions = ArmorTraitBuilder.create("repulsions");
+repulsions.color = 0xffaadd;
+repulsions.localizedName = "斥力";
+repulsions.localizedDescription = "别靠太近！§r\n§f玩家受到来自拥有磁化的敌人的伤害降低";
+repulsions.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:contenttweaker:bewoman>)){
+            return (newDamage - 5.0f) as float;
+        }else {return newDamage;}
+};
+repulsions.register();
+
+val kangci = ArmorTraitBuilder.create("kangci");
+kangci.color = 0xffaadd;
+kangci.localizedName = "抗磁";
+kangci.localizedDescription = "啊哈，你的磁吸地雷贴不上来！§r\n§f减免一定比例的来自拥有磁化效果敌人的伤害";
+kangci.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:contenttweaker:bewoman>)){
+            return 0.7f*newDamage as float;
+        }else {return newDamage;}
+};
+kangci.register();
+
+val xiaoci = ArmorTraitBuilder.create("xiaoci");
+xiaoci.color = 0xffaadd;
+xiaoci.localizedName = "消磁";
+xiaoci.localizedDescription = "可以有效防止机壳对机器内部结构运作造成影响§r\n§f受到拥有磁化效果的敌人的攻击后将其消除并赋予弱点标记效果";
+xiaoci.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:contenttweaker:bewoman>)){
+            attacker.removePotionEffect(<potion:contenttweaker:bewoman>);
+            attacker.addPotionEffect(<potion:contenttweaker:biaoji>.makePotionEffect(300, 0, false, false));
+            return 0.7f*newDamage as float;
+        }else {return newDamage;}
+};
+xiaoci.register();
+
+val egr02 = ArmorTraitBuilder.create("egr02");
+egr02.color = 0xffaadd;
+egr02.localizedName = "异路推演";
+egr02.localizedDescription = "如果通用技术公司发现自家的外贸产品刚好完全符合军方某次招标的全部参数要求...§r\n§f或许在另一个可能性中，截然不同的事件将世界导向了不同的命运...";
+//阿巴阿巴阿巴阿巴阿巴阿巴
+egr02.register();
+
+val baofan = ArmorTraitBuilder.create("baofan");
+baofan.color = 0xffaadd;
+baofan.localizedName = "反应装甲";
+baofan.localizedDescription = "来，往这打§r\n§f受到伤害时有概率引发一场不会破坏方块的爆炸，若敌人拥有缓慢或弱点标记则必定引发";
+baofan.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:contenttweaker:bewoman>))||(attacker.isPotionActive(<potion:contenttweaker:biaoji>)){
+            player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 2, false, false));
+            return newDamage;
+        }else {
+            if(Math.random() < 0.2){
+              player.addPotionEffect(<potion:potioncore:burst>.makePotionEffect(1, 2, false, false));
+              return newDamage;
+            }else{return newDamage;}
+        }
+};
+baofan.register();
+
+val biaojibs = ArmorTraitBuilder.create("biaojibs");
+biaojibs.color = 0xffaadd;
+biaojibs.localizedName = "标记部署";
+biaojibs.localizedDescription = "敌人位置已标定，注意防护§r\n§f受到攻击后若敌人拥有缓慢效果则将其消除并附加弱点标记效果";
+biaojibs.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:minecraft:slowness>)){
+            attacker.removePotionEffect(<potion:minecraft:slowness>);
+            attacker.addPotionEffect(<potion:contenttweaker:biaoji>.makePotionEffect(300, 0, false, false));
+            return 0.65f*newDamage as float;
+        }else {return newDamage;}
+};
+biaojibs.register();
+
+val jingzhunfy = ArmorTraitBuilder.create("jingzhunfy");
+jingzhunfy.color = 0xffaadd;
+jingzhunfy.localizedName = "精准防御";
+jingzhunfy.localizedDescription = "收到，已部署防御措施§r\n§f受到拥有缓慢或弱点标记效果的敌人的伤害减少";
+jingzhunfy.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:minecraft:slowness>))||(attacker.isPotionActive(<potion:contenttweaker:biaoji>)){
+            return 0.63f*newDamage as float;
+        }else {return newDamage;}
+};
+jingzhunfy.register();
+
+val gaomi = ArmorTraitBuilder.create("gaomi");
+gaomi.color = 0xffaadd;
+gaomi.localizedName = "高密度";
+gaomi.localizedDescription = "它才该叫千金沉重§r\n§f受击后给予敌人挖掘疲劳效果";
+gaomi.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+      attacker.addPotionEffect(<potion:minecraft:mining_fatigue>.makePotionEffect(300, 4, false, false));  
+      return newDamage;
+};
+gaomi.register();
+
+val revis = ArmorTraitBuilder.create("revis");
+revis.color = 0xffaadd;
+revis.localizedName = "贮灵Ⅰ";
+revis.localizedDescription = "小型化的灵气节点会汲取灵气分担盔甲的伤痕§r\n§f概率消耗你周围的灵气来代替耐久损耗";
+
+revis.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+    var rand = Math.random();
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.65){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+
+};
+revis.register();
+
+val revisb = ArmorTraitBuilder.create("revisb");
+revisb.color = 0xffaadd;
+revisb.localizedName = "贮灵Ⅱ";
+revisb.localizedDescription = "小型化的灵气节点会汲取灵气分担盔甲的伤痕§r\n§f更高概率消耗你周围的灵气来代替耐久损耗";
+
+revisb.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+      var rand = Math.random();
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.4){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+};
+revisb.register();
+
+val revisc = ArmorTraitBuilder.create("revisc");
+revisc.color = 0xffaadd;
+revisc.localizedName = "贮灵Ⅲ";
+revisc.localizedDescription = "小型化的灵气节点会汲取灵气分担盔甲的伤痕§r\n§f极高概率消耗你周围的灵气来代替耐久损耗";
+
+revisc.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+      var rand = Math.random();
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    if (rand > 0.15){
+    if(vis >= 10.0f){
+        world.drainVis(pos,2.0f);
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } }else{
+       return newAmount;
+    }
+};
+revisc.register();
+
+val stondboundo = ArmorTraitBuilder.create("stondboundo");
+stondboundo.color = 0xffaadd;
+stondboundo.localizedName = "坚实";
+stondboundo.localizedDescription = "你的盔甲深爱着你！§r\n§f你的盔甲使用时极高概率不消耗耐久";
+
+stondboundo.onArmorDamaged = function(trait, armor, damageSource, amount, newAmount, player, index) {
+    var rand = Math.random();
+    if (rand > 0.2){
+       return 0*newAmount;
+    }else{
+    return newAmount;
+    } 
+
+};
+stondboundo.register();
+
+val emancipate = ArmorTraitBuilder.create("emancipate");
+emancipate.color = 0xffaadd;
+emancipate.localizedName = "解放";
+emancipate.localizedDescription = "■■■■§r\n§f玩家受击后若血量低于一定程度时锁定玩家血量一段时间，此效果拥有冷却";
+emancipate.onArmorTick = function(trait, armor, world, player){
+    var WorldTime = world.getWorldTime();//世界时间
+    if(!isNull(armor.tag.voidlastTime)){//判断nbt是否为非空
+      val voidlastTime = armor.tag.voidlastTime;//获取上次触发时间
+      if(WorldTime - voidlastTime>18000){//判断与上次触发时间的距离
+        player.addPotionEffect(<potion:contenttweaker:stopvoid>.makePotionEffect(18000, 0, false, false)); 
+        armor.mutable().updateTag({voidlastTime : WorldTime});//更新nbt触发时间
+      }
+    }else{
+        armor.mutable().updateTag({voidlastTime : WorldTime});//如果之前没触发过，则记录触发时间
+    }  
+};
+
+emancipate.onAbility= function(trait, level, world, player) {
+     if(player.health <=( player.maxHealth as float * 0.25f))&&(player.isPotionActive(<potion:contenttweaker:stopvoid>)){
+    player.addPotionEffect(<potion:contenttweaker:voidability>.makePotionEffect(200, 0, false, false));
+    player.removePotionEffect(<potion:contenttweaker:stopvoid>);
+}
+};
+emancipate.register();
+
+
+val tranquil = ArmorTraitBuilder.create("tranquil");
+tranquil.color = 0xffaadd;
+tranquil.localizedName = "静谧";
+tranquil.localizedDescription = "▒▒▒▒▒▒▒▒§r\n§f持续清除身上的负面效果\n受伤后概率复制敌人身上特定的药水效果\n受伤后获得一定时长的镜子反射效果";
+
+tranquil.onAbility= function(trait, level, world, player) {
+     if (!player.isPotionActive(<potion:potioncore:cure>)){
+         player.addPotionEffect(<potion:potioncore:cure>.makePotionEffect(40, 0, false, false));
+    }
+};
+
+tranquil.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+    if (Math.random()<0.25){
+    if(attacker.isPotionActive(<potion:minecraft:strength>)){
+    player.addPotionEffect(<potion:minecraft:strength>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+    return newDamage;
+}else if(attacker.isPotionActive(<potion:minecraft:resistance>)){
+    player.addPotionEffect(<potion:minecraft:resistance>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+    return newDamage;
+}else if(attacker.isPotionActive(<potion:minecraft:speed>)){
+    player.addPotionEffect(<potion:minecraft:speed>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+    return newDamage;
+}else if(attacker.isPotionActive(<potion:minecraft:haste>)){
+    player.addPotionEffect(<potion:minecraft:haste>.makePotionEffect(300, 0, false, false));
+    player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+    return newDamage;
+}else{
+    player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+    return newDamage;}
+    }else{
+        player.addPotionEffect(<potion:extrabotany:reflect>.makePotionEffect(300, 0, false, false));
+      return newDamage;  
+    }
+};
+
+tranquil.register();
+
+
+/*
+val shibiewu2 = ArmorTraitBuilder.create("shibiewu2");
+shibiewu2.color = 0xffaadd;
+shibiewu2.localizedName = "符文护盾";
+shibiewu2.localizedDescription = "你的盔甲已经被符文护盾武装了！";
+
+shibiewu2.register(); */
+
+val visget = ArmorTraitBuilder.create("visget");
+visget.color = 0xffaadd;
+visget.localizedName = "气场中和";
+visget.localizedDescription = "良好的灵气传导率！§r\n§f受伤增加但同时会降低区域内咒波，血量低于一定程度时改为受伤减少并消耗区域内灵气";
+visget.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    var world as IWorld = player.world;
+    var pos as IBlockPos=player.position;
+    var vis as float =world.getVis(pos);
+    var flux as float =world.getFlux(pos);
+    if((vis >= 10.0f)&&(player.health > 0.33*player.maxHealth)){
+        world.drainVis(pos,5.0f);
+       return 1.2f*newDamage as float;
+    }else if((flux >= 30.0f)&&(player.health <= (0.33*player.maxHealth))){
+        world.drainFlux(pos,0.5f);
+    return 0.7f*newDamage as float;
+    } else {return newDamage;}
+     
+   
+};
+visget.register();
+
+
+val refuse = ArmorTraitBuilder.create("refuse");
+refuse.color = 0xffaadd;
+refuse.localizedName = "坚辞";
+refuse.localizedDescription = "“没人能替抗拒的我推辞”§r\n§f玩家血量低于一定程度减少受到的伤害，且受击后赋予敌人炽烈足迹效果";
+
+refuse.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+     if(player.health <=( player.maxHealth as float * 0.5f)){
+        if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+      attacker.addPotionEffect(<potion:rustic:blazing_trail>.makePotionEffect(2400, 0, false, false));  
+        return (newDamage - 4.0f);
+     }
+    else {return newDamage;}
+};
+
+refuse.register();
+
+val conservative = ArmorTraitBuilder.create("conservative");
+conservative.color = 0xffaadd;
+conservative.localizedName = "不屈";
+conservative.localizedDescription = "“没人能替反抗的我妥协”§r\n§f受到拥有炽烈足迹效果的敌人攻击伤害降低";
+conservative.onHurt = function(trait, armor, player, source, damage, newDamage, evt){
+    if(isNull(source.trueSource)) return newDamage;
+     if (!(source.trueSource instanceof IEntityLivingBase))return newDamage;
+    var attacker as IEntityLivingBase = source.trueSource;
+        if(attacker.isPotionActive(<potion:rustic:blazing_trail>)){
+            return 0.73f*newDamage as float;
+        }else {return newDamage;}
+};
+conservative.register();
+
