@@ -1,3 +1,4 @@
+ 
 
 mods.extendedcrafting.TableCrafting.addShaped(4, <avaritia:resource:5>*1, [
 	[<avaritia:resource>, <avaritia:resource:1>, <avaritia:resource:2>, <avaritia:resource:3>, <avaritia:resource:4>, <avaritia:ultimate_stew>, <avaritia:endest_pearl>, <avaritia:resource:7>, <avaritia:singularity>], 

@@ -1,3 +1,4 @@
+/*
 #loader mixin
 import native.net.minecraft.world.World;
 import native.net.minecraft.util.math.BlockPos;
@@ -27,4 +28,4 @@ zenClass MixinModBlockBrushable {
         // 取消原方法执行，使用我们重写的逻辑
         ci.cancel();
     }
-}
+}*/

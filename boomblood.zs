@@ -1,3 +1,4 @@
+ 
 mods.bloodmagic.BloodAltar.addRecipe(
 <tconevo:metal:25>,
 <additions:fxt-no_color>,

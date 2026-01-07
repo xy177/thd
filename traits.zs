@@ -1,3 +1,4 @@
+ 
 import zentraits.TraitManager;
 
 //TraitManager.attachTrait("材料ID", "特性ID", "部件类型（可选）");添加

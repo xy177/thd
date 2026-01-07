@@ -1,3 +1,4 @@
+ 
 <ore:gemVoid>.remove(<actuallyadditions:item_crystal:3>);
 <ore:crystalVoid>.remove(<actuallyadditions:item_crystal:3>);
 <ore:nuggetVoid>.remove(<actuallyadditions:item_crystal_shard:3>);

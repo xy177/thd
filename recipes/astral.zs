@@ -1,3 +1,4 @@
+ 
 import mods.astralsorcery.Altar;
 
 Altar.addTraitAltarRecipe("bx_ingot",<additions:fxt-bx_ingot>,6000,100,

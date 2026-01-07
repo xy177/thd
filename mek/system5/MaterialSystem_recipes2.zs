@@ -1,3 +1,7 @@
+#ikwid
+#priority 101
+#ignoreBracketErrors
+ 
 import crafttweaker.item.IItemStack;
 import crafttweaker.item.IIngredient;
 import crafttweaker.oredict.IOreDictEntry;
@@ -5,9 +9,7 @@ import crafttweaker.oredict.IOreDict;
 import mod.mekanism.gas.IGasStack;
 import mods.botania.RuneAltar;
 import moretweaker.draconicevolution.FusionCrafting;
-#priority 101
-#ignoreBracketErrors
-#ikwid
+
 //这是由辰林（chengming or chenming）与Minecraft 魔改交流群 | 周易内的大佬修改完成的，如果可以可否保留这条注释让我们在你的包里有一点点的名分，虽然你执意要删我也无法强制让你保留.......
 //This was done by Minecraft CraftTweaker Exchange groups | Zhou Yi in the big Lao and chengming, if possible could you keep this comment to give us a bit of a name in your bag, although I can't force you to keep it if you insist on deleting it .......
 //本文件时参考原文件经本人（xy177）一定量调整后而成，原文件的使用已征得原作者同意

@@ -1,4 +1,5 @@
 #ignoreBracketErrors
+#ikwid
 #reloadable
 import mods.ItemStages.addItemStage;
 import crafttweaker.item.IItemStack;

@@ -1,3 +1,4 @@
+ 
 import mods.appliedenergistics2.Inscriber;
 //屑苦力怕大板
 Inscriber.addRecipe(<text:creeperr>, <tconstruct:large_plate>.withTag({Material: "sjy"}), false, <text:hunhemagic>, <additions:fxt-fan_xing>);

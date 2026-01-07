@@ -1,3 +1,4 @@
+ 
 mods.bloodmagic.BloodAltar.addRecipe(
 <additions:fxt-nmp_tree>,
 <abyssalcraft:essence:1>,

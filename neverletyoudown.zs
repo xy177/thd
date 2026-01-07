@@ -1,6 +1,7 @@
 #loader crafttweaker reloadableevents
 #ignoreBracketErrors
 #reloadable
+ 
 import crafttweaker.world.IWorld;
 import crafttweaker.player.IPlayer;
 
@@ -39,7 +40,7 @@ events.onPlayerChangedDimension(function (event as PlayerChangedDimensionEvent){
         player.sendRichTextMessage(format.red("下界里的那个绿色的泰伯利亚矿石的相关bug已被修复，但挖掘是请仍旧小心爆炸不小心把自己炸死（应该不会有人被炸死吧）"));
     }
     if(goto.getDimension() == 1 && !player.hasGameStage("draconic")){
-        player.sendRichTextMessage(format.red("在你抵达末地的一瞬间你的灵魂被末地深处那混沌的力量粉碎了，制作破旧的电路板并提交任务以再次增强你的灵魂"));
+        player.sendRichTextMessage(format.red("在你抵达末地的一瞬间你的灵魂被末地深处那混沌的力量粉碎了，制作破旧的电路板并SHIFT+右键使用后以再次增强你的灵魂"));
         player.setDimension(4);
         player.health -= player.maxHealth;
     }
@@ -58,22 +59,22 @@ events.onPlayerLoggedIn(function (event as PlayerLoggedInEvent){
     if (!p.world.remote){
     p.server.commandManager.executeCommand(p,"reloadTrait");} */
     if(p.hasGameStage("infinity")){
-        send(p,["你现在处于第五阶段（无尽阶段）","此阶段你的目标只有一个————亲手制作出无尽（而不是止步于领取任务奖励的无尽）","↓进入存档时下方可能输出错误信息，此信息不会影响游戏运行，若有解决此信息对应问题的方式恳请您与我联系"]);
+        send(p,["你现在处于第五阶段（无尽阶段）","此阶段你的目标只有一个————亲手制作出无尽（而不是止步于领取任务奖励的无尽）"]);
         return;
     }
     if(p.hasGameStage("chaotic")){
-        send(p,["你现在处于第四阶段（混沌阶段）","此阶段无法制作无尽催化剂，制作简易启动装置并提交任务才能进入下一阶段","↓进入存档时下方可能输出错误信息，此信息不会影响游戏运行，若有解决此信息对应问题的方式恳请您与我联系"]);
+        send(p,["你现在处于第四阶段（混沌阶段）","此阶段无法制作无尽催化剂，制作简易启动装置并SHIFT+右键使用后才能进入下一阶段"]);
         return;
     }
     if(p.hasGameStage("draconic")){
-        send(p,["你现在处于第三阶段（末地阶段）","此阶段无法使用混沌碎片，制作简易启动装置并提交任务才能进入下一阶段","↓进入存档时下方可能输出错误信息，此信息不会影响游戏运行，若有解决此信息对应问题的方式恳请您与我联系"]);
+        send(p,["你现在处于第三阶段（末地阶段）","此阶段无法使用混沌碎片，制作简易启动装置并SHIFT+右键使用后才能进入下一阶段"]);
         return;
     }
     if(p.hasGameStage("cobalt")){
-        send(p,["你现在处于第二阶段（下界阶段）","此阶段进入末地会暴毙，需要制作破旧的电路板并提交任务才能进入下一阶段","↓进入存档时下方可能输出错误信息，此信息不会影响游戏运行，若有解决此信息对应问题的方式恳请您与我联系"]);
+        send(p,["欢迎回来","此阶段进入末地会暴毙，需要制作破旧的电路板并SHIFT+右键使用后才能进入下一阶段"]);
         return;
     }
-    else send(p,["你现在处于第一阶段（初始阶段）","此阶段进入末地会暴毙且无法飞行，需要制作匠心石并提交任务才能进入下一阶段","↓进入存档时下方可能输出错误信息，此信息不会影响游戏运行，若有解决此信息对应问题的方式恳请您与我联系"]);
+    else send(p,["哦，你回来了，学徒。","你现在处于第一阶段，因此灵魂还相当薄弱，你尚且无法掌握飞行之力并且无法对下界那个多首灾祸的亡骸残躯造成伤害——更别提前往末地那处被混沌席卷的地方了，你需要制作匠心石并SHIFT+右键使用后才能使你的灵魂进入下一阶段"]);
 });
 
 //events.onCommand(function(event as CommandEvent){

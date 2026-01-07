@@ -1,3 +1,4 @@
+#ikwid
 import mods.appliedenergistics2.Grinder;
 //exu2磨粉
 mods.extrautils2.Crusher.remove(<minecraft:iron_ingot>);

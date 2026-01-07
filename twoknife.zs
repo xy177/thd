@@ -1,6 +1,7 @@
+ 
 
 #loader crafttweaker reloadableevents
-//#ikwid
+// 
 import crafttweaker.player.IPlayer;
 import crafttweaker.event.PlayerRightClickItemEvent;
 import crafttweaker.item.IItemStack;

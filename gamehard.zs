@@ -1,4 +1,4 @@
-#ikwid
+ 
 import crafttweaker.events.IEventManager;
 
 import mods.ctintegration.gamestages.GameStageAddedEvent;

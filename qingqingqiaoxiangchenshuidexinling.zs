@@ -1,3 +1,4 @@
+ 
 import mods.tconstruct.Alloy;
 mods.tconstruct.Alloy.addRecipe(<liquid:rosegold> * 576, [<liquid:copper> * 432, <liquid:gold> * 144]);
 mods.tconstruct.Alloy.addRecipe(<liquid:fourze> * 576, [<liquid:niob_fluid> * 288, <liquid:exenderium> * 432]);

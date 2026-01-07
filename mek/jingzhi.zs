@@ -1,3 +1,4 @@
+ 
 //富集
 mods.mekanism.enrichment.removeRecipe(<mekanism:dirtydust:2>, <mekanism:dust:2>);
 mods.mekanism.enrichment.addRecipe(<mekanism:dirtydust:2>, <additions:farm-mekosmiumfen>);

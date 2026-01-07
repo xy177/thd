@@ -1,3 +1,4 @@
+ 
 import mods.abyssalcraft.CreationRitual;
 mods.abyssalcraft.CreationRitual.addRitual("creationRitualTest", 0, -1, 1000, false, <minecraft:diamond>, [<minecraft:coal>, <minecraft:coal>, <minecraft:coal>, <minecraft:coal>, <minecraft:coal>, <minecraft:coal>, <minecraft:coal>, <minecraft:coal>], false);
 mods.abyssalcraft.InfusionRitual.addRitual("infusionxadahgla", 4, -1, 100000, false, <text:xadahgla>, <abyssalcraft:azathothcharm>, [<abyssalcraft:ingotblock:1>, <abyssalcraft:statue:3>, <abyssalcraft:ingotblock:2>, <abyssalcraft:statue:3>, <abyssalcraft:ingotblock>, <abyssalcraft:statue:3>, <abyssalcraft:ingotblock:3>, <abyssalcraft:statue:3>], false);

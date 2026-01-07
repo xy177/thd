@@ -1,4 +1,4 @@
-#ikwid
+ 
 import crafttweaker.events.IEventManager;
 import crafttweaker.world.IBlockPos;
 import crafttweaker.event.PlayerTickEvent;

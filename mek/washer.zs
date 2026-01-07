@@ -1,3 +1,4 @@
+#ikwid
 mods.mekanism.chemical.washer.removeRecipe(<gas:gold>, <gas:cleanGold>);
 mods.mekanism.chemical.washer.removeRecipe(<gas:osmium>, <gas:cleanOsmium>);
 mods.mekanism.chemical.washer.removeRecipe(<gas:copper>, <gas:cleanCopper>);

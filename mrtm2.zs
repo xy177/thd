@@ -1,3 +1,4 @@
+ 
 recipes.addShaped(<artifacts:bottled_cloud>, [[<minecraft:planks>, <minecraft:planks>, <minecraft:planks>], [<minecraft:glass>, <ore:clouds>, <minecraft:glass>], [<minecraft:glass>, <minecraft:glass>, <minecraft:glass>]]);
 recipes.addShaped(<artifacts:night_vision_goggles>, [[<ore:ingotEnderium>, <ore:ingotEnderium>, <ore:ingotEnderium>], [<actuallyadditions:item_crystal_empowered:4>, <conarm:travel_night>, <actuallyadditions:item_crystal_empowered:4>], [<ore:ingotEnderium>, <ore:ingotEnderium>, <ore:ingotEnderium>]]);
 recipes.addShaped(<artifacts:star_cloak>, [[<astralsorcery:itemcraftingcomponent:1>, <astralsorcery:itemcraftingcomponent:1>, <astralsorcery:itemcraftingcomponent:1>], [<minecraft:gold_ingot>, <astralsorcery:itemcraftingcomponent:1>, <minecraft:gold_ingot>], [<minecraft:gold_ingot>, <ore:eternalLifeEssence>, <minecraft:gold_ingot>]]);
@@ -81,9 +82,9 @@ recipes.addShaped(<croparia:chrome_ingot> * 2, [[<croparia:fruit_chrome>]]);
 recipes.addShaped(<croparia:titanium_ingot> * 2, [[<croparia:fruit_titanium>]]);
 recipes.addShaped(<suikerawore:ingot_zinc> * 2, [[<croparia:fruit_zinc>]]);
 recipes.addShaped(<suikerawore:ingot_tungsten> * 2, [[<croparia:fruit_tungsten>]]);
-recipes.addShaped(<mekanism:ingot:8> * 2, [[<croparia:fruit_uranium>]]);
+recipes.addShaped(<suikerawore:ingot_uranium> * 2, [[<croparia:fruit_uranium>]]);
 recipes.addShaped(<suikerawore:ingot_nickel> * 2, [[<croparia:fruit_nickel>]]);
-recipes.addShaped(<thermalfoundation:material:129> * 2, [[<croparia:fruit_tin>]]);
+recipes.addShaped(<suikerawore:ingot_tin> * 2, [[<croparia:fruit_tin>]]);
 recipes.addShaped(<suikerawore:ingot_silver> * 2, [[<croparia:fruit_silveringot>]]);
 recipes.addShaped(<suikerawore:ingot_platinum> * 2, [[<croparia:fruit_platinium>]]);
 recipes.addShaped(<suikerawore:ingot_lead> * 2, [[<croparia:fruit_lead>]]);

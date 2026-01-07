@@ -1,3 +1,4 @@
+ 
 import mods.thermalexpansion.InductionSmelter;
 mods.thermalexpansion.InductionSmelter.addRecipe(<text:rosegoldingot>,<thermalfoundation:material:128>*3, <minecraft:gold_ingot>,  1500, <thermalfoundation:material:68>, 10);
 

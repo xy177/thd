@@ -1,3 +1,4 @@
+ 
 
 //mods.mekanism.combiner.addRecipe(<mekanism:atomicalloy> , <minecraft:nether_star>, <additions:fxt-alloy_nether>);
 mods.mekanism.combiner.addRecipe(<additions:fxt-alloy_nether> , <additions:farm-mekiron>, <additions:fxt-armyiron>);

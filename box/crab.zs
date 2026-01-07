@@ -1,3 +1,4 @@
+#ikwid
 import crafttweaker.item.IItemStack;
 import loottweaker.LootTweaker;
 

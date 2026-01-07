@@ -1,3 +1,4 @@
+#ikwid
 //本模板由灰喉提供
 import crafttweaker.item.IItemStack;
 import loottweaker.LootTweaker;
